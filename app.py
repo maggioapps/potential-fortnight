@@ -8,7 +8,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- 🎨 1. STILE GRAFICO CORRETTO PER LA LEGGIBILITÀ ---
+# --- 🎨 1. STILE GRAFICO E SCRIPT AUTOMATICO DI INSTALLAZIONE (PWA) ---
 st.markdown("""
 <style>
     .stApp {
@@ -39,7 +39,48 @@ st.markdown("""
         color: #065f46 !important;
         font-family: 'Inter', sans-serif;
     }
+    
+    /* Stile per il pulsante di installazione automatica */
+    #install-app-btn {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 12px;
+        text-align: center;
+        font-weight: bold;
+        display: none; /* Si attiva automaticamente quando il browser rileva che l'app è installabile */
+        border: none;
+        width: 100%;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+        margin-bottom: 15px;
+        font-size: 16px;
+    }
 </style>
+
+<script>
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        const installBtn = document.getElementById('install-app-btn');
+        if (installBtn) {
+            installBtn.style.display = 'block';
+        }
+    });
+
+    function installApp() {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('Utente ha accettato l installazione');
+                }
+                deferredPrompt = null;
+            });
+        }
+    }
+</script>
 """, unsafe_allow_html=True)
 
 # --- 2. GESTIONE SESSIONE PER LE ANALISI GRATUITE GIORNALIERE ---
@@ -56,13 +97,13 @@ LANGUAGES = {
     "Español": {"title": "Split & Save AI - Ahorro Inteligente 💡", "unlimited": "Cuenta Ilimitada Activa (Admin)", "review": "Reseñas Verificadas", "goal": "Tus Objetivos Personales"},
     "Français": {"title": "Split & Save AI - Économies Intelligentes 💡", "unlimited": "Compte Illimité Actif (Admin)", "review": "Avis Vérifiés", "goal": "Vos Objectifs Personnels"},
     "Deutsch": {"title": "Split & Save AI - Intelligentes Sparen 💡", "unlimited": "Unbegrenztes Konto Aktiv (Admin)", "review": "Verifizierte Bewertungen", "goal": "Ihre persönlichen Ziele"},
-    "Português": {"title": "Split & Save AI - Poupança Inteligente 💡", "unlimited": "Conta Ilimitada Ativa (Admin)", "review": "Avaliações Verificadas", "goal": "Seus Objetivos Pessoais"},
+    "Português": {"title": "Split & Save AI - Poupança Inteligente 💡", "unlimited": "Conta Ilatida Ativa (Admin)", "review": "Avaliações Verificadas", "goal": "Seus Objetivos Pessoais"},
     "Русский": {"title": "Split & Save AI - Умные сбережения 💡", "unlimited": "Безлимитный аккаунт активен (Admin)", "review": "Проверенные отзывы", "goal": "Ваши личные цели"},
     "中文": {"title": "Split & Save AI - 智能省钱 💡", "unlimited": "无限账户已激活 (Admin)", "review": "verified reviews", "goal": "您的个人目标"},
     "العربية": {"title": "Split & Save AI - التوفير الذكي 💡", "unlimited": "الحساب غير المحدود نشط (Admin)", "review": "تقييمات موثوقة", "goal": "أهدافك الشخصية"},
     "日本語": {"title": "Split & Save AI - スマート節約 💡", "unlimited": "無制限アカウント有効 (Admin)", "review": "確認済みレビュー", "goal": "あなたの個人的な目標"},
     "Hindi": {"title": "Split & Save AI - स्मार्ट बचत 💡", "unlimited": "अिमिटेड अकाउंट सक्रिय (Admin)", "review": "समीक्षाएं", "goal": "आपके व्यक्तिगत लक्ष्य"},
-    "Polski": {"title": "Split & Save AI - Inteligentne Oszczędzanie 💡", "unlimited": "Konto bez limitu aktywne (Admin)", "review": "Zweryfinowane opinie", "goal": "Twoje cele osobiste"}
+    "Polski": {"title": "Split & Save AI - Inteligentne Oszczędzanie 💡", "unlimited": "Konto bez limitu aktywne (Admin)", "review": "Zweryfikowane opinie", "goal": "Twoje cele osobiste"}
 }
 
 selected_lang = st.sidebar.selectbox("🌍 Lingua / Language", list(LANGUAGES.keys()), index=0)
@@ -70,14 +111,17 @@ t = LANGUAGES[selected_lang]
 
 st.title(t["title"])
 
-# --- 4. SEZIONE GUIDA INSTALLAZIONE WEB APP (Sostituisce il vecchio tasto APK) ---
+# --- 4. TASTO DI INSTALLAZIONE AUTOMATICA NELLA SIDEBAR ---
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 📱 Installa l'App sul Telefono")
-st.sidebar.info(
-    "Puoi installare questa app direttamente sulla schermata Home del tuo smartphone come una vera applicazione:\n\n"
-    "1. Apri il menu del browser (i 3 puntini in alto a destra su Android o il tasto Condividi su iPhone).\n"
-    "2. Seleziona **'Aggiungi a schermata Home'** o **'Installa app'**.\n\nL'app si aprirà a schermo intero!"
-)
+st.sidebar.markdown("### 📱 Installa l'App")
+
+# Pulsante HTML interattivo che appare automaticamente su mobile quando pronto
+st.sidebar.markdown("""
+<button id="install-app-btn" onclick="installApp()">📥 Installa Subito</button>
+""", unsafe_allow_html=True)
+
+# Testo di supporto nel caso il browser non mostri il prompt automatico
+st.sidebar.caption("Se il pulsante non appare, puoi comunque aggiungere l'app alla schermata Home dai tre puntini in alto a destra del browser.")
 
 # --- 5. ACCESSO AMMINISTRATIVO SICURO E CONTEGGIO GRATUITO ---
 st.sidebar.markdown("---")
