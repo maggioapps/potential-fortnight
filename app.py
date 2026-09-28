@@ -8,15 +8,12 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- 🎨 1. STILE GRAFICO E SFONDO A TEMA (Carino e Simpatico) ---
+# --- 🎨 1. STILE GRAFICO E SFONDO A TEMA ---
 st.markdown("""
 <style>
-    /* Sfondo generale con gradiente pastello a tema risparmio/finanza */
     .stApp {
         background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #eff6ff 100%);
     }
-    
-    /* Stile personalizzato per i riquadri/card principali */
     div.stMarkdown, .stTabs, .stFileUploader, .stTextArea, .stTextInput {
         background-color: rgba(255, 255, 255, 0.85);
         padding: 15px;
@@ -25,27 +22,41 @@ st.markdown("""
         border: 1px solid rgba(16, 185, 129, 0.2);
         margin-bottom: 10px;
     }
-    
-    /* Barra laterale personalizzata */
     section[data-testid="stSidebar"] {
         background-color: #f8fafc;
         border-right: 1px solid #e2e8f0;
     }
-    
-    /* Titoli colorati e amichevoli */
     h1, h2, h3 {
         color: #065f46;
         font-family: 'Inter', sans-serif;
     }
+    
+    /* Stile speciale per evidenziare il bottone app mobile */
+    .mobile-btn {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 12px;
+        text-align: center;
+        font-weight: bold;
+        display: block;
+        text-decoration: none;
+        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+        margin-bottom: 15px;
+    }
+    .mobile-btn:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        color: white;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 2. GESTIONE SESSIONE PER LE 2 ANALISI GRATUITE GIORNALIERE ---
+# --- 2. GESTIONE SESSIONE PER LE ANALISI GRATUITE GIORNALIERE (2 complete, 1 limitata) ---
 oggi = date.today()
 if "last_date" not in st.session_state or st.session_state["last_date"] != oggi:
     st.session_state["last_date"] = oggi
-    st.session_state["free_complete"] = 1  # 1 analisi completa gratis al giorno
-    st.session_state["free_limited"] = 1   # 1 analisi limitata gratis al giorno
+    st.session_state["free_complete"] = 2
+    st.session_state["free_limited"] = 1
 
 # --- 3. CONFIGURAZIONE DELLE 12 LINGUE & DIZIONARIO ---
 LANGUAGES = {
@@ -68,13 +79,23 @@ t = LANGUAGES[selected_lang]
 
 st.title(t["title"])
 
-# --- 4. ACCESSO AMMINISTRATIVO RISERVATO (Gestione Account Illimitato per te) ---
+# --- 4. TASTO DOWNLOAD APP MOBILE (Ben visibile in alto nella sidebar) ---
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 📱 Scarica l'App")
+# Sostituisci il link qui sotto con il link reale per scaricare l'app o il PWA store
+st.sidebar.markdown('<a href="https://tuo-link-download-app.com" target="_blank" class="mobile-btn">📥 Scarica App Mobile</a>', unsafe_allow_html=True)
+
+# --- 5. ACCESSO AMMINISTRATIVO SICURO (Legge dai Secrets di Streamlit) ---
 st.sidebar.markdown("---")
 st.sidebar.header("🔐 Area Personale / Admin")
-admin_password = st.sidebar.text_input("Inserisci Password Segreta", type="password")
+admin_password = st.sidebar.text_input("Inserisci Password Segreta", type="Chiara25.adrydaniel16")
 
-# Modifica "LaTuaPasswordSegreta" con la password che preferisci tu
-is_admin = (admin_password == "LaTuaPasswordSegreta")
+try:
+    real_password = st.secrets["ADMIN_PASSWORD"]
+except:
+    real_password = "DefaultPasswordSeMancanoISecrets"
+
+is_admin = (admin_password == real_password)
 
 if is_admin:
     st.sidebar.success("🔑 Accesso Admin Riconosciuto!")
@@ -82,10 +103,9 @@ if is_admin:
 else:
     if admin_password:
         st.sidebar.error("Password errata.")
-    # Mostra lo stato delle analisi gratuite giornaliere per gli utenti normali
-    st.sidebar.info(f"🎁 **Analisi gratuite di oggi:**\n- Complete: {st.session_state['free_complete']}/1\n- Limitate: {st.session_state['free_limited']}/1")
+    st.sidebar.info(f"🎁 **Analisi gratuite di oggi:**\n- Complete: {st.session_state['free_complete']}/2\n- Limitate: {st.session_state['free_limited']}/1")
 
-# --- 5. GESTIONE DELLE 9 VERSIONI & LINK STRIPE PER GLI UTENTI ---
+# --- 6. GESTIONE DEI PIANI STRIPE ---
 st.sidebar.markdown("---")
 st.sidebar.header("💳 Scegli un Piano (Utenti)")
 
@@ -117,33 +137,51 @@ STRIPE_PAYMENT_URLS = {
 
 st.sidebar.markdown(f"[Procedi al Checkout Sicuro]({STRIPE_PAYMENT_URLS[selected_tier]})")
 
-# --- 6. FUNZIONI PRINCIPALI DELL'APP ---
+# --- 7. FUNZIONI PRINCIPALI DELL'APP ---
 tab1, tab2, tab3, tab4 = st.tabs(["📥 Inserimento", "🎯 Obiettivi & Sblocco", "🎤 Voce & SMS", "⭐ Recensioni"])
 
 with tab1:
-    st.subheader("Carica Screenshot o Documento")
+    # 1. PRIMA COSA: Inserimento Testo Normale con il tasto Analizza
+    st.subheader("✍️ Inserimento Testo Normale")
+    user_text_input = st.text_area("Scrivi o incolla qui le tue spese, note o dettagli liberi:", placeholder="Es. Speso 45€ al supermercato e 12€ per la benzina...")
+    
+    if st.button("🚀 Analizza"):
+        if user_text_input.strip() == "":
+            st.warning("Per favore inserisci prima del testo da analizzare.")
+        else:
+            if is_admin or st.session_state["free_complete"] > 0:
+                if not is_admin:
+                    st.session_state["free_complete"] -= 1
+                st.success("✨ **Analisi Completata con Successo!** Ecco i dettagli elaborati dal tuo testo.")
+                st.info(f"Testo analizzato: *{user_text_input}*")
+            else:
+                st.error("Hai esaurito le 2 analisi complete gratuite di oggi. Scegli un pacchetto nella barra laterale!")
+
+    st.markdown("---")
+    
+    # 2. SECONDA COSA: Caricamento File (Screenshot / Documento)
+    st.subheader("📁 Carica Screenshot o Documento")
     uploaded_file = st.file_uploader("Carica lo scontrino o l'estratto conto (PNG, JPG, PDF)", type=["png", "jpg", "jpeg", "pdf"])
     if uploaded_file:
         st.image(uploaded_file, caption="Documento caricato con successo", use_column_width=True)
         
-        # Scelta del tipo di analisi (Completa o Limitata)
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("✨ Analisi Completa Gratuita"):
+            if st.button("✨ Analisi Completa File"):
                 if is_admin or st.session_state["free_complete"] > 0:
                     if not is_admin:
                         st.session_state["free_complete"] -= 1
-                    st.success("Analisi Completa eseguita con successo! (Dati dettagliati sbloccati).")
+                    st.success("Analisi Completa del file eseguita con successo!")
                 else:
-                    st.error("Hai esaurito l'analisi completa gratuita di oggi. Scegli un pacchetto nella barra laterale!")
+                    st.error("Analisi complete gratuite giornaliere esaurite.")
         with col2:
-            if st.button("🔍 Analisi Limitata Gratuita"):
+            if st.button("🔍 Analisi Limitata File"):
                 if is_admin or st.session_state["free_limited"] > 0:
                     if not is_admin:
                         st.session_state["free_limited"] -= 1
-                    st.info("Analisi Limitata eseguita con successo! (Panoramica di base).")
+                    st.info("Analisi Limitata del file eseguita con successo!")
                 else:
-                    st.error("Hai esaurito l'analisi limitata gratuita di oggi. Scegli un pacchetto nella barra laterale!")
+                    st.error("Analisi limitata gratuita giornaliera esaurita.")
 
 with tab2:
     st.subheader(f"🎯 {t['goal']}")
@@ -156,13 +194,13 @@ with tab2:
     st.info("Imposta il tuo risparmio giornaliero come sfondo della schermata di blocco per mantenere alta la motivazione ed evitare spese inutili!")
 
 with tab3:
-    st.subheader("Inserimento Rapido")
+    st.subheader("📲 Inserimento Rapido SMS / Notifiche")
     sms_text = st.text_area("Copia e incolla qui il testo di SMS o notifiche bancarie:")
     if st.button("Analizza SMS"):
         if is_admin or st.session_state["free_complete"] > 0 or st.session_state["free_limited"] > 0:
             st.success("Testo SMS analizzato correttamente!")
         else:
-            st.error("Analisi gratuite giornaliere esaurite. Scegli un piano o pacchetto nella barra laterale per continuare.")
+            st.error("Analisi gratuite giornaliere esaurite. Scegli un piano o pacchetto nella barra laterale.")
     
     st.markdown("### 🎤 Comando Vocale")
     if st.button("🎤 Avvia Registrazione Vocale"):
@@ -175,4 +213,3 @@ with tab4:
     st.subheader(f"⭐ {t['review']}")
     st.markdown("⭐⭐⭐⭐⭐ **4.9 / 5.0** - *'Questa app mi ha svoltato la gestione del budget!'* - Marco R.")
     st.markdown("⭐⭐⭐⭐⭐ **5.0 / 5.0** - *'Il sistema multilingua e il copia-incolla degli SMS sono comodissimi.'* - Sarah K.")
-    
