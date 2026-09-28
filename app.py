@@ -82,10 +82,9 @@ st.title(t["title"])
 # --- 4. TASTO DOWNLOAD APP MOBILE (Ben visibile in alto nella sidebar) ---
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📱 Scarica l'App")
-# Sostituisci il link qui sotto con il link reale per scaricare l'app o il PWA store
 st.sidebar.markdown('<a href="https://tuo-link-download-app.com" target="_blank" class="mobile-btn">📥 Scarica App Mobile</a>', unsafe_allow_html=True)
 
-# --- 5. ACCESSO AMMINISTRATIVO SICURO (Legge dai Secrets di Streamlit) ---
+# --- 5. ACCESSO AMMINISTRATIVO SICURO E CONTEGGIO GRATUITO ---
 st.sidebar.markdown("---")
 st.sidebar.header("🔐 Area Personale / Admin")
 admin_password = st.sidebar.text_input("Inserisci Password Segreta", type="password")
@@ -103,11 +102,12 @@ if is_admin:
 else:
     if admin_password:
         st.sidebar.error("Password errata.")
+    # Mostra sempre le analisi gratuite giornaliere
     st.sidebar.info(f"🎁 **Analisi gratuite di oggi:**\n- Complete: {st.session_state['free_complete']}/2\n- Limitate: {st.session_state['free_limited']}/1")
 
-# --- 6. GESTIONE DEI PIANI STRIPE ---
+# --- 6. GESTIONE DEI PIANI STRIPE (Abbonamenti) ---
 st.sidebar.markdown("---")
-st.sidebar.header("💳 Scegli un Piano (Utenti)")
+st.sidebar.header("💳 Scegli un Piano / Abbonamento")
 
 tier_choices = [
     "Pacchetto day smart (€0.59 - 1 analisi)",
@@ -141,7 +141,6 @@ st.sidebar.markdown(f"[Procedi al Checkout Sicuro]({STRIPE_PAYMENT_URLS[selected
 tab1, tab2, tab3, tab4 = st.tabs(["📥 Inserimento", "🎯 Obiettivi & Sblocco", "🎤 Voce & SMS", "⭐ Recensioni"])
 
 with tab1:
-    # 1. PRIMA COSA: Inserimento Testo Normale con il tasto Analizza
     st.subheader("✍️ Inserimento Testo Normale")
     user_text_input = st.text_area("Scrivi o incolla qui le tue spese, note o dettagli liberi:", placeholder="Es. Speso 45€ al supermercato e 12€ per la benzina...")
     
@@ -159,7 +158,6 @@ with tab1:
 
     st.markdown("---")
     
-    # 2. SECONDA COSA: Caricamento File (Screenshot / Documento)
     st.subheader("📁 Carica Screenshot o Documento")
     uploaded_file = st.file_uploader("Carica lo scontrino o l'estratto conto (PNG, JPG, PDF)", type=["png", "jpg", "jpeg", "pdf"])
     if uploaded_file:
