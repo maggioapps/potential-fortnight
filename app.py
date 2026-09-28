@@ -88,7 +88,7 @@ st.sidebar.markdown('<a href="https://tuo-link-download-app.com" target="_blank"
 # --- 5. ACCESSO AMMINISTRATIVO SICURO (Legge dai Secrets di Streamlit) ---
 st.sidebar.markdown("---")
 st.sidebar.header("🔐 Area Personale / Admin")
-admin_password = st.sidebar.text_input("Inserisci Password Segreta", type="Chiara25.adrydaniel16")
+admin_password = st.sidebar.text_input("Inserisci Password Segreta", type="password")
 
 try:
     real_password = st.secrets["ADMIN_PASSWORD"]
