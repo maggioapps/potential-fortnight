@@ -1,6 +1,5 @@
 import streamlit as st
 from datetime import date
-import os
 
 # Configurazione della pagina
 st.set_page_config(
@@ -63,7 +62,7 @@ LANGUAGES = {
     "العربية": {"title": "Split & Save AI - التوفير الذكي 💡", "unlimited": "الحساب غير المحدود نشط (Admin)", "review": "تقييمات موثوقة", "goal": "أهدافك الشخصية"},
     "日本語": {"title": "Split & Save AI - スマート節約 💡", "unlimited": "無制限アカウント有効 (Admin)", "review": "確認済みレビュー", "goal": "あなたの個人的な目標"},
     "Hindi": {"title": "Split & Save AI - स्मार्ट बचत 💡", "unlimited": "अिमिटेड अकाउंट सक्रिय (Admin)", "review": "समीक्षाएं", "goal": "आपके व्यक्तिगत लक्ष्य"},
-    "Polski": {"title": "Split & Save AI - Inteligentne Oszczędzanie 💡", "unlimited": "Konto bez limitu aktywne (Admin)", "review": "Zweryfikowane opinie", "goal": "Twoje cele osobiste"}
+    "Polski": {"title": "Split & Save AI - Inteligentne Oszczędzanie 💡", "unlimited": "Konto bez limitu aktywne (Admin)", "review": "Zweryfinowane opinie", "goal": "Twoje cele osobiste"}
 }
 
 selected_lang = st.sidebar.selectbox("🌍 Lingua / Language", list(LANGUAGES.keys()), index=0)
@@ -71,22 +70,14 @@ t = LANGUAGES[selected_lang]
 
 st.title(t["title"])
 
-# --- 4. TASTO DOWNLOAD APP MOBILE (Pulsante di download nativo di Streamlit) ---
+# --- 4. SEZIONE GUIDA INSTALLAZIONE WEB APP (Sostituisce il vecchio tasto APK) ---
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 📱 Scarica l'App")
-
-file_path = "app.apk"  # Sostituisci con il nome del tuo file se diverso (es. file.apk o file.pdf)
-
-if os.path.exists(file_path):
-    with open(file_path, "rb") as file:
-        st.sidebar.download_button(
-            label="📥 Scarica App Mobile",
-            data=file,
-            file_name="SplitAndSaveAI.apk",
-            mime="application/vnd.android.package-archive"
-        )
-else:
-    st.sidebar.info("⚠️ Carica il file dell'app (es. app.apk) nella cartella del progetto per abilitare il download diretto.")
+st.sidebar.markdown("### 📱 Installa l'App sul Telefono")
+st.sidebar.info(
+    "Puoi installare questa app direttamente sulla schermata Home del tuo smartphone come una vera applicazione:\n\n"
+    "1. Apri il menu del browser (i 3 puntini in alto a destra su Android o il tasto Condividi su iPhone).\n"
+    "2. Seleziona **'Aggiungi a schermata Home'** o **'Installa app'**.\n\nL'app si aprirà a schermo intero!"
+)
 
 # --- 5. ACCESSO AMMINISTRATIVO SICURO E CONTEGGIO GRATUITO ---
 st.sidebar.markdown("---")
@@ -182,7 +173,7 @@ with tab1:
                         st.session_state["free_limited"] -= 1
                     st.info("Analisi Limitata del file eseguita con successo!")
                 else:
-                    st.error("Analisi limitata gratuita giornaliera esaurita.")
+                    st.error("Analisi limitata gratuita giornaliera esaurite.")
 
 with tab2:
     st.subheader(f"🎯 {t['goal']}")
