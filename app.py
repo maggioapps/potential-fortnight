@@ -93,3 +93,14 @@ elif piano == "Ultra (€14.99/mese - 10gg prova)":
                 st.markdown(response.text)
             except Exception as e:
                 st.error(f"Errore: {e}")
+# --- SEZIONE RECENSIONI ---
+st.markdown("---")
+st.subheader("⭐ Valuta Split & Save AI")
+
+with st.form("form_recensione"):
+    voto = st.slider("Seleziona una valutazione (da 1 a 5 stelle):", 1, 5, 5)
+    commento = st.text_area("Lascia un commento o un feedback (opzionale):")
+    inviato = st.form_submit_button("Invia recensione")
+    
+    if inviato:
+        st.success("Grazie! La tua valutazione è stata registrata con successo.")
