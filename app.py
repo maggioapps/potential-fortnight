@@ -71,7 +71,7 @@ st.title(t["title"])
 # --- 4. ACCESSO AMMINISTRATIVO RISERVATO (Gestione Account Illimitato per te) ---
 st.sidebar.markdown("---")
 st.sidebar.header("🔐 Area Personale / Admin")
-admin_password = st.sidebar.text_input("Chiara.adry.daniel.", type="password")
+admin_password = st.sidebar.text_input("Inserisci Password Segreta", type="password")
 
 # Modifica "LaTuaPasswordSegreta" con la password che preferisci tu
 is_admin = (admin_password == "LaTuaPasswordSegreta")
@@ -175,3 +175,4 @@ with tab4:
     st.subheader(f"⭐ {t['review']}")
     st.markdown("⭐⭐⭐⭐⭐ **4.9 / 5.0** - *'Questa app mi ha svoltato la gestione del budget!'* - Marco R.")
     st.markdown("⭐⭐⭐⭐⭐ **5.0 / 5.0** - *'Il sistema multilingua e il copia-incolla degli SMS sono comodissimi.'* - Sarah K.")
+    
