@@ -8,33 +8,38 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- 🎨 1. STILE GRAFICO E SFONDO A TEMA ---
+# --- 🎨 1. STILE GRAFICO E ALTO CONTRASTO ---
 st.markdown("""
 <style>
     .stApp {
         background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #eff6ff 100%);
+        color: #1f2937;
     }
     div.stMarkdown, .stTabs, .stFileUploader, .stTextArea, .stTextInput {
-        background-color: rgba(255, 255, 255, 0.85);
+        background-color: #ffffff;
         padding: 15px;
         border-radius: 16px;
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.08);
         border: 1px solid rgba(16, 185, 129, 0.2);
         margin-bottom: 10px;
+        color: #1f2937;
+    }
+    p, span, label, div, .stMarkdown p {
+        color: #1f2937 !important;
     }
     section[data-testid="stSidebar"] {
         background-color: #f8fafc;
         border-right: 1px solid #e2e8f0;
     }
     h1, h2, h3 {
-        color: #065f46;
+        color: #065f46 !important;
         font-family: 'Inter', sans-serif;
     }
     
     /* Stile speciale per evidenziare il bottone app mobile */
     .mobile-btn {
         background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        color: white;
+        color: white !important;
         padding: 12px 20px;
         border-radius: 12px;
         text-align: center;
@@ -46,12 +51,12 @@ st.markdown("""
     }
     .mobile-btn:hover {
         background: linear-gradient(135deg, #059669 0%, #047857 100%);
-        color: white;
+        color: white !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 2. GESTIONE SESSIONE PER LE ANALISI GRATUITE GIORNALIERE (2 complete, 1 limitata) ---
+# --- 2. GESTIONE SESSIONE PER LE ANALISI GRATUITE GIORNALIERE ---
 oggi = date.today()
 if "last_date" not in st.session_state or st.session_state["last_date"] != oggi:
     st.session_state["last_date"] = oggi
@@ -79,10 +84,11 @@ t = LANGUAGES[selected_lang]
 
 st.title(t["title"])
 
-# --- 4. TASTO DOWNLOAD APP MOBILE (Ben visibile in alto nella sidebar) ---
+# --- 4. TASTO DOWNLOAD APP MOBILE (Aggiornato con il tuo link reale) ---
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📱 Scarica l'App")
-st.sidebar.markdown('<a href="https://tuo-link-download-app.com" target="_blank" class="mobile-btn">📥 Scarica App Mobile</a>', unsafe_allow_html=True)
+link_app_mobile = "https://potential-fortnight-funhb2jbmzj4ekbspwag3k.streamlit.app/"
+st.sidebar.markdown(f'<a href="{link_app_mobile}" target="_blank" class="mobile-btn">📥 Scarica App Mobile</a>', unsafe_allow_html=True)
 
 # --- 5. ACCESSO AMMINISTRATIVO SICURO E CONTEGGIO GRATUITO ---
 st.sidebar.markdown("---")
@@ -102,7 +108,6 @@ if is_admin:
 else:
     if admin_password:
         st.sidebar.error("Password errata.")
-    # Mostra sempre le analisi gratuite giornaliere
     st.sidebar.info(f"🎁 **Analisi gratuite di oggi:**\n- Complete: {st.session_state['free_complete']}/2\n- Limitate: {st.session_state['free_limited']}/1")
 
 # --- 6. GESTIONE DEI PIANI STRIPE (Abbonamenti) ---
