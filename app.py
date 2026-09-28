@@ -1,5 +1,6 @@
 import streamlit as st
 from datetime import date
+import os
 
 # Configurazione della pagina
 st.set_page_config(
@@ -8,12 +9,11 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- 🎨 1. STILE GRAFICO E ALTO CONTRASTO ---
+# --- 🎨 1. STILE GRAFICO CORRETTO PER LA LEGGIBILITÀ ---
 st.markdown("""
 <style>
     .stApp {
         background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #eff6ff 100%);
-        color: #1f2937;
     }
     div.stMarkdown, .stTabs, .stFileUploader, .stTextArea, .stTextInput {
         background-color: #ffffff;
@@ -22,36 +22,23 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.08);
         border: 1px solid rgba(16, 185, 129, 0.2);
         margin-bottom: 10px;
-        color: #1f2937;
     }
-    p, span, label, div, .stMarkdown p {
-        color: #1f2937 !important;
+    p, span, label, .stMarkdown p {
+        color: #1f2937;
     }
     section[data-testid="stSidebar"] {
         background-color: #f8fafc;
         border-right: 1px solid #e2e8f0;
     }
+    section[data-testid="stSidebar"] p, 
+    section[data-testid="stSidebar"] span, 
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] div {
+        color: #1f2937 !important;
+    }
     h1, h2, h3 {
         color: #065f46 !important;
         font-family: 'Inter', sans-serif;
-    }
-    
-    /* Stile speciale per evidenziare il bottone app mobile */
-    .mobile-btn {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        color: white !important;
-        padding: 12px 20px;
-        border-radius: 12px;
-        text-align: center;
-        font-weight: bold;
-        display: block;
-        text-decoration: none;
-        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
-        margin-bottom: 15px;
-    }
-    .mobile-btn:hover {
-        background: linear-gradient(135deg, #059669 0%, #047857 100%);
-        color: white !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -84,11 +71,22 @@ t = LANGUAGES[selected_lang]
 
 st.title(t["title"])
 
-# --- 4. TASTO DOWNLOAD APP MOBILE (Aggiornato con il tuo link reale) ---
+# --- 4. TASTO DOWNLOAD APP MOBILE (Pulsante di download nativo di Streamlit) ---
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📱 Scarica l'App")
-link_app_mobile = "https://potential-fortnight-funhb2jbmzj4ekbspwag3k.streamlit.app/"
-st.sidebar.markdown(f'<a href="{link_app_mobile}" target="_blank" class="mobile-btn">📥 Scarica App Mobile</a>', unsafe_allow_html=True)
+
+file_path = "app.apk"  # Sostituisci con il nome del tuo file se diverso (es. file.apk o file.pdf)
+
+if os.path.exists(file_path):
+    with open(file_path, "rb") as file:
+        st.sidebar.download_button(
+            label="📥 Scarica App Mobile",
+            data=file,
+            file_name="SplitAndSaveAI.apk",
+            mime="application/vnd.android.package-archive"
+        )
+else:
+    st.sidebar.info("⚠️ Carica il file dell'app (es. app.apk) nella cartella del progetto per abilitare il download diretto.")
 
 # --- 5. ACCESSO AMMINISTRATIVO SICURO E CONTEGGIO GRATUITO ---
 st.sidebar.markdown("---")
