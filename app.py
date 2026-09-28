@@ -41,18 +41,18 @@ st.markdown("""
 
 # --- 2. CONFIGURAZIONE DELLE 12 LINGUE & DIZIONARIO ---
 LANGUAGES = {
-    "Italiano": {"title": "Split & Save AI - Risparmio Intelligente 💡", "unlimited": "Account Illimitato Attivo", "review": "Recensioni Verificate", "goal": "I tuoi Obiettivi Personali"},
-    "English": {"title": "Split & Save AI - Smart Savings 💡", "unlimited": "Unlimited Account Active", "review": "Verified Reviews", "goal": "Your Personal Goals"},
-    "Español": {"title": "Split & Save AI - Ahorro Inteligente 💡", "unlimited": "Cuenta Ilimitada Activa", "review": "Reseñas Verificadas", "goal": "Tus Objetivos Personales"},
-    "Français": {"title": "Split & Save AI - Économies Intelligentes 💡", "unlimited": "Compte Illimité Actif", "review": "Avis Vérifiés", "goal": "Vos Objectifs Personnels"},
-    "Deutsch": {"title": "Split & Save AI - Intelligentes Sparen 💡", "unlimited": "Unbegrenztes Konto Aktiv", "review": "Verifizierte Bewertungen", "goal": "Ihre persönlichen Ziele"},
-    "Português": {"title": "Split & Save AI - Poupança Inteligente 💡", "unlimited": "Conta Ilimitada Ativa", "review": "Avaliações Verificadas", "goal": "Seus Objetivos Pessoais"},
-    "Русский": {"title": "Split & Save AI - Умные сбережения 💡", "unlimited": "Безлимитный аккаунт активен", "review": "Проверенные отзывы", "goal": "Ваши личные цели"},
-    "中文": {"title": "Split & Save AI - 智能省钱 💡", "unlimited": "无限账户已激活", "review": "verified reviews", "goal": "您的个人目标"},
-    "العربية": {"title": "Split & Save AI - التوفير الذكي 💡", "unlimited": "الحساب غير المحدود نشط", "review": "تقييمات موثوقة", "goal": "أهدافك الشخصية"},
-    "日本語": {"title": "Split & Save AI - スマート節約 💡", "unlimited": "無制限アカウント有効", "review": "確認済みレビュー", "goal": "あなたの個人的な目標"},
-    "Hindi": {"title": "Split & Save AI - स्मार्ट बचत 💡", "unlimited": "अिमिटेड अकाउंट सक्रिय", "review": "समीक्षाएं", "goal": "आपके व्यक्तिगत लक्ष्य"},
-    "Polski": {"title": "Split & Save AI - Inteligentne Oszczędzanie 💡", "unlimited": "Konto bez limitu aktywne", "review": "Zweryfikowane opinie", "goal": "Twoje cele osobiste"}
+    "Italiano": {"title": "Split & Save AI - Risparmio Intelligente 💡", "unlimited": "Account Illimitato Attivo (Admin)", "locked": "Funzioni limitate. Scegli un piano o accedi come Admin.", "review": "Recensioni Verificate", "goal": "I tuoi Obiettivi Personali"},
+    "English": {"title": "Split & Save AI - Smart Savings 💡", "unlimited": "Unlimited Account Active (Admin)", "locked": "Limited features. Choose a plan or login as Admin.", "review": "Verified Reviews", "goal": "Your Personal Goals"},
+    "Español": {"title": "Split & Save AI - Ahorro Inteligente 💡", "unlimited": "Cuenta Ilimitada Activa (Admin)", "locked": "Funciones limitadas. Elige un plan o entra como Admin.", "review": "Reseñas Verificadas", "goal": "Tus Objetivos Personales"},
+    "Français": {"title": "Split & Save AI - Économies Intelligentes 💡", "unlimited": "Compte Illimité Actif (Admin)", "locked": "Fonctionnalités limitées. Choisissez un plan ou connectez-vous.", "review": "Avis Vérifiés", "goal": "Vos Objectifs Personnels"},
+    "Deutsch": {"title": "Split & Save AI - Intelligentes Sparen 💡", "unlimited": "Unbegrenztes Konto Aktiv (Admin)", "locked": "Eingeschränkte Funktionen. Wählen Sie einen Plan.", "review": "Verifizierte Bewertungen", "goal": "Ihre persönlichen Ziele"},
+    "Português": {"title": "Split & Save AI - Poupança Inteligente 💡", "unlimited": "Conta Ilimitada Ativa (Admin)", "locked": "Recursos limitados. Escolha um plano ou faça login.", "review": "Avaliações Verificadas", "goal": "Seus Objetivos Pessoais"},
+    "Русский": {"title": "Split & Save AI - Умные сбережения 💡", "unlimited": "Безлимитный аккаунт активен (Admin)", "locked": "Ограниченный доступ. Выберите план.", "review": "Проверенные отзывы", "goal": "Ваши личные цели"},
+    "中文": {"title": "Split & Save AI - 智能省钱 💡", "unlimited": "无限账户已激活 (Admin)", "locked": "功能受限，请选择方案或登录管理员。", "review": "verified reviews", "goal": "您的个人目标"},
+    "العربية": {"title": "Split & Save AI - التوفير الذكي 💡", "unlimited": "الحساب غير المحدود نشط (Admin)", "locked": "ميزات محدودة. اختر خطة أو سجل الدخول.", "review": "تقييمات موثوقة", "goal": "أهدافك الشخصية"},
+    "日本語": {"title": "Split & Save AI - スマート節約 💡", "unlimited": "無制限アカウント有効 (Admin)", "locked": "制限された機能です。プランを選択するかログインしてください。", "review": "確認済みレビュー", "goal": "あなたの個人的な目標"},
+    "Hindi": {"title": "Split & Save AI - स्मार्ट बचत 💡", "unlimited": "अिमिटेड अकाउंट सक्रिय (Admin)", "locked": "सीमित सुविधाएं। योजना चुनें।", "review": "समीक्षाएं", "goal": "आपके व्यक्तिगत लक्ष्य"},
+    "Polski": {"title": "Split & Save AI - Inteligentne Oszczędzanie 💡", "unlimited": "Konto bez limitu aktywne (Admin)", "locked": "Ograniczone funkcje. Wybierz plan.", "review": "Zweryfikowane opinie", "goal": "Twoje cele osobiste"}
 }
 
 selected_lang = st.sidebar.selectbox("🌍 Lingua / Language", list(LANGUAGES.keys()), index=0)
@@ -60,19 +60,25 @@ t = LANGUAGES[selected_lang]
 
 st.title(t["title"])
 
-# --- 3. ACCESSO AMMINISTRATIVO RISERVATO (Solo per te) ---
+# --- 3. ACCESSO AMMINISTRATIVO RISERVATO (Gestione Account Illimitato per te) ---
 st.sidebar.markdown("---")
-with st.sidebar.expander("🔐 Area Amministratore (Riservata)"):
-    admin_password = st.text_input("Password Admin", type="password")
-    # Sostituisci "LaTuaPasswordSegreta" con la password che preferisci
-    if admin_password == "LaTuaPasswordSegreta":
-        st.success("Accesso Admin Autorizzato! Benvenuto.")
-        st.info("Pannello di controllo attivo: monitoraggio incassi e gestione utenti illimitata.")
-    elif admin_password:
-        st.error("Password errata.")
+st.sidebar.header("🔐 Area Personale / Admin")
+admin_password = st.sidebar.text_input("Inserisci Password Segreta", type="password")
 
-# --- 4. GESTIONE DELLE 9 VERSIONI & LINK STRIPE REALI ---
-st.sidebar.header("💳 Acquista / Abbonati (9 Versioni)")
+# Controlla se la password è corretta (Modifica "LaTuaPasswordSegreta" con la tua password)
+is_admin = (admin_password == "LaTuaPasswordSegreta")
+
+if is_admin:
+    st.sidebar.success("🔑 Accesso Admin Riconosciuto!")
+    st.success(f"🔓 {t['unlimited']}")
+else:
+    if admin_password:
+        st.sidebar.error("Password errata.")
+    st.warning(f"🔒 {t['locked']}")
+
+# --- 4. GESTIONE DELLE 9 VERSIONI & LINK STRIPE PER GLI UTENTI ---
+st.sidebar.markdown("---")
+st.sidebar.header("💳 Scegli un Piano (Utenti)")
 
 tier_choices = [
     "Pacchetto day smart (€0.59 - 1 analisi)",
@@ -88,7 +94,7 @@ tier_choices = [
 
 selected_tier = st.sidebar.selectbox("Seleziona il piano o pacchetto:", tier_choices)
 
-# Dizionario collegato con i tuoi 9 link Stripe reali (senza periodi di prova)
+# Dizionario dei link Stripe reali
 STRIPE_PAYMENT_URLS = {
     "Pacchetto day smart (€0.59 - 1 analisi)": "https://buy.stripe.com/test_eVq9AU7LnfG70wR9i0bwk08",
     "Pacchetto day smart 2 (€1.59 - 2 analisi)": "https://buy.stripe.com/test_6oUdRa3v72TldjD3XGbwk00",
@@ -103,9 +109,7 @@ STRIPE_PAYMENT_URLS = {
 
 st.sidebar.markdown(f"[Procedi al Checkout Sicuro]({STRIPE_PAYMENT_URLS[selected_tier]})")
 
-# --- 5. FUNZIONI PRINCIPALI DELL'APP (I 12 PUNTI INTEGRATI) ---
-st.success(f"🔓 {t['unlimited']}: Accesso completo alle funzioni senza blocchi.")
-
+# --- 5. FUNZIONI PRINCIPALI DELL'APP ---
 tab1, tab2, tab3, tab4 = st.tabs(["📥 Inserimento", "🎯 Obiettivi & Sblocco", "🎤 Voce & SMS", "⭐ Recensioni"])
 
 with tab1:
@@ -128,11 +132,17 @@ with tab3:
     st.subheader("Inserimento Rapido")
     sms_text = st.text_area("Copia e incolla qui il testo di SMS o notifiche bancarie:")
     if st.button("Analizza SMS"):
-        st.success("Testo analizzato correttamente dall'IA!")
+        if is_admin:
+            st.success("Testo analizzato correttamente dall'IA (Accesso Illimitato Admin attivo).")
+        else:
+            st.info("Per effettuare l'analisi, completa l'acquisto del piano selezionato o accedi come Admin.")
     
     st.markdown("### 🎤 Comando Vocale")
     if st.button("🎤 Avvia Registrazione Vocale"):
-        st.warning("Ascolto in corso... (Funzione attiva)")
+        if is_admin:
+            st.success("Registrazione vocale elaborata con successo (Admin).")
+        else:
+            st.warning("Funzione riservata agli utenti con piano attivo o Admin.")
 
 with tab4:
     st.subheader(f"⭐ {t['review']}")
