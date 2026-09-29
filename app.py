@@ -13,7 +13,7 @@ st.set_page_config(
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
     genai.configure(api_key=api_key)
-    # Usiamo il modello standard di Gemini
+    # Impostiamo il modello in modo sicuro
     model = genai.GenerativeModel('gemini-1.5-flash')
     gemini_disponibile = True
 except Exception as e:
@@ -142,7 +142,7 @@ STRIPE_PAYMENT_URLS = {
 
 st.sidebar.markdown(f"[Procedi al Checkout Sicuro]({STRIPE_PAYMENT_URLS[selected_tier]})")
 
-# --- 7. FUNZIONI PRINCIPALI DELL'APP (CON INTEGRAZIONE GEMINI) ---
+# --- 7. FUNZIONI PRINCIPALI DELL'APP ---
 tab1, tab2, tab3, tab4 = st.tabs(["📥 Inserimento", "🎯 Obiettivi & Sblocco", "🎤 Voce & SMS", "⭐ Recensioni"])
 
 with tab1:
@@ -167,7 +167,7 @@ with tab1:
                             st.success("✨ **Analisi Completata con Successo!**")
                             st.markdown(response.text)
                         except Exception as e:
-                            st.error(f-f"Errore durante l'analisi con l'IA: {e}")
+                            st.error(f"Errore durante l'analisi con l'IA: {e}")
             else:
                 st.error("Hai esaurito le 2 analisi complete gratuite di oggi. Scegli un pacchetto nella barra laterale!")
 
