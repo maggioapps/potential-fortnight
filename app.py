@@ -22,7 +22,7 @@ try:
     }
     
     model = genai.GenerativeModel(
-        model_name='gemini-1.5-flash',
+        model_name='gemini-3.8-flash',
         generation_config=generation_config
     )
     gemini_disponibile = True
