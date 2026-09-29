@@ -14,7 +14,7 @@ try:
     api_key = st.secrets["GEMINI_API_KEY"]
     genai.configure(api_key=api_key)
     # Impostiamo il modello in modo sicuro
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-3.8-flash')
     gemini_disponibile = True
 except Exception as e:
     gemini_disponibile = False
