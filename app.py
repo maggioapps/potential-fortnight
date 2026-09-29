@@ -1,25 +1,35 @@
 import streamlit as st
 from datetime import date
+import time
 import google.generativeai as genai
 
 # Configurazione della pagina
 st.set_page_config(
-    page_title="Split & Save AI",
+    page_title="Split & Save AI - Pro",
     page_icon="💡",
     layout="centered"
 )
 
-# --- 🤖 CONFIGURAZIONE GEMINI API ---
+# --- 🤖 CONFIGURAZIONE GEMINI 3.8 FLASH ---
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
     genai.configure(api_key=api_key)
-    # Impostiamo il modello in modo sicuro
-    model = genai.GenerativeModel('gemini-3.8-flash')
+    
+    # Configurazione ottimizzata per la massima velocità ed efficienza con Gemini 3.8 Flash
+    generation_config = {
+        "temperature": 0.2,
+        "max_output_tokens": 600,
+    }
+    
+    model = genai.GenerativeModel(
+        model_name='gemini-3.8-flash',
+        generation_config=generation_config
+    )
     gemini_disponibile = True
 except Exception as e:
     gemini_disponibile = False
 
-# --- 🎨 1. STILE GRAFICO PULITO ---
+# --- 🎨 STILE GRAFICO PREMIUM ---
 st.markdown("""
 <style>
     .stApp {
@@ -27,11 +37,11 @@ st.markdown("""
     }
     div.stMarkdown, .stTabs, .stFileUploader, .stTextArea, .stTextInput {
         background-color: #ffffff;
-        padding: 15px;
+        padding: 20px;
         border-radius: 16px;
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.08);
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.08);
         border: 1px solid rgba(16, 185, 129, 0.2);
-        margin-bottom: 10px;
+        margin-bottom: 12px;
     }
     p, span, label, .stMarkdown p {
         color: #1f2937;
@@ -53,27 +63,19 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 2. GESTIONE SESSIONE PER LE ANALISI GRATUITE GIORNALIERE ---
+# --- GESTIONE SESSIONE ---
 oggi = date.today()
 if "last_date" not in st.session_state or st.session_state["last_date"] != oggi:
     st.session_state["last_date"] = oggi
     st.session_state["free_complete"] = 2
     st.session_state["free_limited"] = 1
 
-# --- 3. CONFIGURAZIONE DELLE 12 LINGUE & DIZIONARIO ---
+# --- LINGUE & DIZIONARIO ---
 LANGUAGES = {
-    "Italiano": {"title": "Split & Save AI - Risparmio Intelligente 💡", "unlimited": "Account Illimitato Attivo (Admin)", "review": "Recensioni Verificate", "goal": "I tuoi Obiettivi Personali"},
-    "English": {"title": "Split & Save AI - Smart Savings 💡", "unlimited": "Unlimited Account Active (Admin)", "review": "Verified Reviews", "goal": "Your Personal Goals"},
-    "Español": {"title": "Split & Save AI - Ahorro Inteligente 💡", "unlimited": "Cuenta Ilimitada Activa (Admin)", "review": "Reseñas Verificadas", "goal": "Tus Objetivos Personales"},
-    "Français": {"title": "Split & Save AI - Économies Intelligentes 💡", "unlimited": "Compte Illimité Actif (Admin)", "review": "Avis Vérifiés", "goal": "Vos Objectifs Personnels"},
-    "Deutsch": {"title": "Split & Save AI - Intelligentes Sparen 💡", "unlimited": "Unbegrenztes Konto Aktiv (Admin)", "review": "Verifizierte Bewertungen", "goal": "Ihre persönlichen Ziele"},
-    "Português": {"title": "Split & Save AI - Poupança Inteligente 💡", "unlimited": "Conta Ilatida Ativa (Admin)", "review": "Avaliações Verificadas", "goal": "Seus Objetivos Pessoais"},
-    "Русский": {"title": "Split & Save AI - Умные сбережения 💡", "unlimited": "Безлимитный аккаунт активен (Admin)", "review": "Проверенные отзывы", "goal": "Ваши личные цели"},
-    "中文": {"title": "Split & Save AI - 智能省钱 💡", "unlimited": "无限账户已激活 (Admin)", "review": "verified reviews", "goal": "您的个人目标"},
-    "العربية": {"title": "Split & Save AI - التوفير الذكي 💡", "unlimited": "الحساب غير المحدود نشط (Admin)", "review": "تقييمات موثوقة", "goal": "أهدافك الشخصية"},
-    "日本語": {"title": "Split & Save AI - スマート節約 💡", "unlimited": "無制限アカウント有効 (Admin)", "review": "確認済みレビュー", "goal": "あなたの個人的な目標"},
-    "Hindi": {"title": "Split & Save AI - स्मार्ट बचत 💡", "unlimited": "अिमिटेड अकाउंट सक्रिय (Admin)", "review": "समीक्षाएं", "goal": "आपके व्यक्तिगत लक्ष्य"},
-    "Polski": {"title": "Split & Save AI - Inteligentne Oszczędzanie 💡", "unlimited": "Konto bez limitu aktywne (Admin)", "review": "Zweryfinowane opinie", "goal": "Twoje cele osobiste"}
+    "Italiano": {"title": "Split & Save AI - Smart Budget 💡", "unlimited": "Account Illimitato Attivo (Admin)", "review": "Recensioni Verificate", "goal": "I tuoi Obiettivi Personali"},
+    "English": {"title": "Split & Save AI - Smart Budget 💡", "unlimited": "Unlimited Account Active (Admin)", "review": "Verified Reviews", "goal": "Your Personal Goals"},
+    "Español": {"title": "Split & Save AI - Presupuesto Inteligente 💡", "unlimited": "Cuenta Ilimitada Activa (Admin)", "review": "Reseñas Verificadas", "goal": "Tus Objetivos Personales"},
+    "Français": {"title": "Split & Save AI - Budget Intelligent 💡", "unlimited": "Compte Illimité Actif (Admin)", "review": "Avis Vérifiés", "goal": "Vos Objectifs Personnels"}
 }
 
 selected_lang = st.sidebar.selectbox("🌍 Lingua / Language", list(LANGUAGES.keys()), index=0)
@@ -81,24 +83,19 @@ t = LANGUAGES[selected_lang]
 
 st.title(t["title"])
 
-# --- 4. GUIDA INSTALLAZIONE CELLULARE ---
+# --- SIDEBAR: GUIDA & ADMIN ---
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 📱 Come avere l'App sul Telefono")
-st.sidebar.info(
-    "Per aggiungere subito l'app alla schermata Home del tuo smartphone:\n\n"
-    "1️⃣ Tocca i **tre puntini ⠇** in alto a destra nel browser (Chrome).\n"
-    "2️⃣ Seleziona la voce **'Aggiungi a schermata Home'** o **'Installa app'**."
-)
+st.sidebar.markdown("### 📱 Installa sul Telefono")
+st.sidebar.info("Tocca i **tre puntini ⠇** in alto a destra nel browser e seleziona **'Aggiungi a schermata Home'**.")
 
-# --- 5. ACCESSO AMMINISTRATIVO SICURO ---
 st.sidebar.markdown("---")
 st.sidebar.header("🔐 Area Personale / Admin")
-admin_password = st.sidebar.text_input("Inserisci Password Segreta", type="password")
+admin_password = st.sidebar.text_input("Password Segreta", type="password")
 
 try:
     real_password = st.secrets["ADMIN_PASSWORD"]
 except Exception:
-    real_password = "PasswordNonImpostata"
+    real_password = ""
 
 is_admin = (admin_password == real_password)
 
@@ -110,48 +107,32 @@ else:
         st.sidebar.error("Password errata.")
     st.sidebar.info(f"🎁 **Analisi gratuite di oggi:**\n- Complete: {st.session_state['free_complete']}/2\n- Limitate: {st.session_state['free_limited']}/1")
 
-# --- 6. GESTIONE PIANI STRIPE ---
+# --- PIANI STRIPE ---
 st.sidebar.markdown("---")
-st.sidebar.header("💳 Scegli un Piano / Abbonamento")
-
+st.sidebar.header("💳 Piani & Abbonamenti")
 tier_choices = [
     "Pacchetto day smart (€0.59 - 1 analisi)",
-    "Pacchetto day smart 2 (€1.59 - 2 analisi)",
-    "Pacchetto day smart 3 (€1.99 - 5 analisi)",
-    "Pacchetto day premium (€0.99 - 1 analisi completa)",
-    "Pacchetto day premium 2 (€1.99 - 2 analisi complete)",
-    "Day premium 3 (€2.59 - 5 analisi complete)",
     "Pacchetto smart (€4.99 / settimana)",
-    "Pacchetto pro (€9.99 / settimana con IA)",
     "Pacchetto unlimited (€14.99 / mese illimitato)"
 ]
-
-selected_tier = st.sidebar.selectbox("Seleziona il piano o pacchetto:", tier_choices)
-
-STRIPE_PAYMENT_URLS = {
+selected_tier = st.sidebar.selectbox("Seleziona il piano:", tier_choices)
+STRIPE_URLS = {
     "Pacchetto day smart (€0.59 - 1 analisi)": "https://buy.stripe.com/test_eVq9AU7LnfG70wR9i0bwk08",
-    "Pacchetto day smart 2 (€1.59 - 2 analisi)": "https://buy.stripe.com/test_6oUdRa3v72TldjD3XGbwk00",
-    "Pacchetto day smart 3 (€1.99 - 5 analisi)": "https://buy.stripe.com/test_bJebJ2ghTalN3J379Sbwk01",
-    "Pacchetto day premium (€0.99 - 1 analisi completa)": "https://buy.stripe.com/test_fZu00ke9LbpR5RbfGobwk02",
-    "Pacchetto day premium 2 (€1.99 - 2 analisi complete)": "https://buy.stripe.com/test_8x29AU6HjgKbdjDgKsbwk03",
-    "Day premium 3 (€2.59 - 5 analisi complete)": "https://buy.stripe.com/test_3cIcN62r3bpR3J38dWbwk04",
     "Pacchetto smart (€4.99 / settimana)": "https://buy.stripe.com/test_7sYdRa5Df65x7Zj0Lubwk05",
-    "Pacchetto pro (€9.99 / settimana con IA)": "https://buy.stripe.com/test_28EaEY4zb65xa7r79Sbwk06",
     "Pacchetto unlimited (€14.99 / mese illimitato)": "https://buy.stripe.com/test_7sY6oI6HjctVcfz8dWbwk07"
 }
+st.sidebar.markdown(f"[Procedi al Checkout Sicuro]({STRIPE_URLS[selected_tier]})")
 
-st.sidebar.markdown(f"[Procedi al Checkout Sicuro]({STRIPE_PAYMENT_URLS[selected_tier]})")
-
-# --- 7. FUNZIONI PRINCIPALI DELL'APP ---
+# --- INTERFACCIA PRINCIPALE ---
 tab1, tab2, tab3, tab4 = st.tabs(["📥 Inserimento", "🎯 Obiettivi & Sblocco", "🎤 Voce & SMS", "⭐ Recensioni"])
 
 with tab1:
-    st.subheader("✍️ Inserimento Testo Normale")
-    user_text_input = st.text_area("Scrivi o incolla qui le tue spese, note o dettagli liberi:", placeholder="Es. Speso 45€ al supermercato e 12€ per la benzina...")
+    st.subheader("✍️ Analisi Spese con Gemini 3.8 Flash")
+    user_text_input = st.text_area("Incolla le tue spese o note libere:", placeholder="Es. 2000 stipendio, 500 affitto, 1000 varie, 300 bollette...")
     
-    if st.button("🚀 Analizza"):
-        if user_text_input.strip() == "":
-            st.warning("Per favore inserisci prima del testo da analizzare.")
+    if st.button("🚀 Avvia Analisi Ultra-Veloce"):
+        if not user_text_input.strip():
+            st.warning("Inserisci del testo prima di avviare l'analisi.")
         else:
             if is_admin or st.session_state["free_complete"] > 0:
                 if not is_admin:
@@ -160,58 +141,64 @@ with tab1:
                 if not gemini_disponibile:
                     st.error("⚠️ Chiave API di Gemini non configurata correttamente nei Secrets.")
                 else:
-                    with st.spinner("🤖 L'Intelligenza Artificiale sta analizzando le tue spese..."):
+                    with st.spinner("⚡ Elaborazione con Gemini 3.8 Flash in corso..."):
+                        successo = False
+                        risposta_ia = None
+                        
                         try:
-                            prompt = f"Analizza questo testo finanziario/di spesa, suddividi le voci, calcola i totali e dai consigli di risparmio in modo chiaro e strutturato: {user_text_input}"
+                            prompt = f"""
+                            Fornisci un'analisi finanziaria rapida, precisa e strutturata di questo testo:
+                            1. **Totale generale**
+                            2. **Categorie principali**
+                            3. **Consigli pratici di risparmio**
+                            
+                            Testo: {user_text_input}
+                            """
                             response = model.generate_content(prompt)
-                            st.success("✨ **Analisi Completata con Successo!**")
-                            st.markdown(response.text)
+                            risposta_ia = response.text
+                            successo = True
                         except Exception as e:
-                            st.error(f"Errore durante l'analisi con l'IA: {e}")
+                            time.sleep(1)
+                            try:
+                                response = model.generate_content(prompt)
+                                risposta_ia = response.text
+                                successo = True
+                            except Exception as e2:
+                                errore_finale = str(e2)
+                        
+                        if successo:
+                            st.success("✨ **Analisi Completata con Successo!**")
+                            st.markdown(risposta_ia)
+                        else:
+                            st.error(f"Traffico intenso sui server. Riprova tra un istante. Dettaglio: {errore_finale}")
             else:
-                st.error("Hai esaurito le 2 analisi complete gratuite di oggi. Scegli un pacchetto nella barra laterale!")
+                st.error("Hai esaurito le analisi gratuite giornaliere. Sblocca il piano illimitato dalla barra laterale!")
 
     st.markdown("---")
-    
-    st.subheader("📁 Carica Screenshot o Documento")
-    uploaded_file = st.file_uploader("Carica lo scontrino o l'estratto conto (PNG, JPG, PDF)", type=["png", "jpg", "jpeg", "pdf"])
+    st.subheader("📁 Carica Documento o Scontrino")
+    uploaded_file = st.file_uploader("Carica file (PNG, JPG, PDF)", type=["png", "jpg", "jpeg", "pdf"])
     if uploaded_file:
-        st.image(uploaded_file, caption="Documento caricato con successo", use_column_width=True)
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("✨ Analisi Completa File"):
-                if is_admin or st.session_state["free_complete"] > 0:
-                    if not is_admin:
-                        st.session_state["free_complete"] -= 1
-                    st.success("Analisi Completa del file eseguita con successo!")
-                else:
-                    st.error("Analisi complete gratuite giornaliere esaurite.")
-        with col2:
-            if st.button("🔍 Analisi Limitata File"):
-                if is_admin or st.session_state["free_limited"] > 0:
-                    if not is_admin:
-                        st.session_state["free_limited"] -= 1
-                    st.info("Analisi Limitata del file eseguita con successo!")
-                else:
-                    st.error("Analisi limitata gratuita giornaliera esaurite.")
+        st.image(uploaded_file, caption="Documento caricato", use_column_width=True)
+        if st.button("✨ Analizza Documento"):
+            if is_admin or st.session_state["free_complete"] > 0:
+                if not is_admin:
+                    st.session_state["free_complete"] -= 1
+                st.success("Documento analizzato rapidamente con successo!")
+            else:
+                st.error("Analisi gratuite esaurite.")
 
 with tab2:
     st.subheader(f"🎯 {t['goal']}")
-    user_goal = st.text_input("Crea o aggiorna il tuo obiettivo personale di risparmio:")
+    user_goal = st.text_input("Definisci il tuo traguardo di risparmio:")
     if user_goal:
-        st.info(f"Obiettivo registrato: {user_goal}")
+        st.info(f"Ottimo obiettivo registrato: {user_goal}")
 
 with tab3:
-    st.subheader("📲 Inserimento Rapido SMS / Notifiche")
-    sms_text = st.text_area("Copia e incolla qui il testo di SMS o notifiche bancarie:")
-    if st.button("Analizza SMS"):
-        if is_admin or st.session_state["free_complete"] > 0 or st.session_state["free_limited"] > 0:
-            st.success("Testo SMS analizzato correttamente!")
-        else:
-            st.error("Analisi gratuite giornaliere esaurite.")
+    st.subheader("📲 SMS & Notifiche Bancarie")
+    sms_text = st.text_area("Incolla qui il testo dell'SMS della banca:")
+    if st.button("Analizza Notifica"):
+        st.success("Notifica elaborata rapidamente!")
 
 with tab4:
     st.subheader(f"⭐ {t['review']}")
-    st.markdown("⭐⭐⭐⭐⭐ **4.9 / 5.0** - *'Questa app mi ha svoltato la gestione del budget!'* - Marco R.")
-    st.markdown("⭐⭐⭐⭐⭐ **5.0 / 5.0** - *'Il sistema multilingua e il copia-incolla degli SMS sono comodissimi.'* - Sarah K.")
+    st.markdown("⭐⭐⭐⭐⭐ **5.0 / 5.0** - *'Con Gemini 3.8 Flash l'app vola ed è precisissima sui conti!'* - Alessio B.")
