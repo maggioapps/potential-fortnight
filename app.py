@@ -10,12 +10,11 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- 🤖 CONFIGURAZIONE GEMINI FLASH STABILE ---
+# --- 🤖 CONFIGURAZIONE GEMINI ---
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
     genai.configure(api_key=api_key)
     
-    # Usiamo il modello standard stabile e veloce per evitare errori 404
     generation_config = {
         "temperature": 0.3,
         "max_output_tokens": 1500,
@@ -140,9 +139,8 @@ with tab1:
                 if not gemini_disponibile:
                     st.error("⚠️ Chiave API di Gemini non configurata correttamente nei Secrets.")
                 else:
-                    with st.spinner("💎 Analisi dettagliata del bilancio in corso..."):
+                    with st.spinner("💎 Analisi dettagliata del bilancio in corso (attendi un istante)..."):
                         try:
-                            # PROMPT STRUTTURATO PER DARE ESATTAMENTE IL RISULTATO DELLE TUE FOTO
                             prompt = f"""
                             Agisci come un direttore finanziario personale di altissimo livello. Analizza la lista di spese e/o entrate fornita dall'utente.
                             Fornisci una risposta approfondita, professionale e formattata esattamente con questa struttura e con le icone indicate:
@@ -153,33 +151,49 @@ with tab1:
                             - Rimante (Risparmio): [differenza e percentuale]
 
                             🔍 **Analisi della situazione**
-                            [Spiega lo stato di salute finanziaria in modo chiaro, valutando se si è in pareggio o a rischio imprevisti, proprio come nelle immagini di riferimento].
+                            [Spiega lo stato di salute finanziaria in chiaro, valutando se si è in pareggio o a rischio imprevisti].
 
                             💪 **Punti di forza:**
-                            - [Analizza le voci positive es. affitto o spesa calibrata sullo stipendio]
+                            - [Analizza le voci positive]
 
-                            ⚠️️ **Punti critici (dove intervenire):**
-                            - [Analizza le voci alte o vaghe come bollette o varie, spiegando perché sono critiche e dando consigli pratici di taglio].
+                            ⚠ **Punti critici (dove intervenire):**
+                            - [Analizza le voci alte e dai consigli pratici di taglio].
 
                             💡 **Proposta di ottimizzazione (Obiettivo Risparmio)**
                             Se provassi a ricalibrare le spese in questo modo:
                             - [Elenca le singole voci corrette/ottimizzate]
                             - 👈 **Nuove uscite:** [Totale ottimizzato]
                             - 👈 **Nuovo risparmio mensile:** [Nuovo importo e percentuale]
-                            [Concludi con una frase motivazionale sul fondo d'emergenza o accumulo annuale].
+                            [Concludi con una frase motivazionale].
 
                             Testo inserito dall'utente:
                             {user_text_input}
                             """
-                            response = model.generate_content(prompt)
                             
+                            # Meccanismo di sicurezza integrato anti-quota (riprova fino a 2 volte se incontra il limite)
+                            response = None
+                            for tentativi in range(2):
+                                try:
+                                    response = model.generate_content(prompt)
+                                    break
+                                except Exception as api_err:
+                                    if "429" in str(api_err) or "quota" in str(api_err).lower():
+                                        if tentativi == 0:
+                                            time.sleep(12) # Attende 12 secondi e riprova in automatico
+                                            continue
+                                    raise api_err
+
                             if response and response.text:
                                 st.success("Analisi completata!")
                                 st.markdown(response.text)
                             else:
-                                st.error("L'IA ha restituito una risposta vuota. Riprova.")
+                                st.error("L'IA ha restituito una risposta vuota. Riprova tra un attimo.")
                         except Exception as e:
-                            st.error(f"Errore durante l'analisi: {e}")
+                            error_str = str(e)
+                            if "429" in error_str or "quota" in error_str.lower():
+                                st.warning("⏳ **Traffico intenso sulla chiave API gratuita.** Google richiede qualche secondo di pausa. Riprova a cliccare su 'Analiza (Free)' tra circa 15 secondi.")
+                            else:
+                                st.error(f"Errore durante l'analisi: {e}")
             else:
                 st.error("Hai esaurito le analisi gratuite giornaliere. Sblocca il piano illimitato dalla barra laterale!")
 
