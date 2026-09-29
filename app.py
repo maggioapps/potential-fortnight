@@ -1,3 +1,4 @@
+
 import streamlit as st
 from datetime import date
 import time
@@ -21,7 +22,7 @@ try:
     }
     
     model = genai.GenerativeModel(
-        model_name='gemini-3.8-flash',
+        model_name='gemini-2.0-flash',
         generation_config=generation_config
     )
     gemini_disponibile = True
@@ -128,74 +129,82 @@ with tab1:
     st.subheader("Incolla qui la lista delle spese:")
     user_text_input = st.text_area("Spese:", placeholder="Es. 2000 stipendio, 500 affitto...", label_visibility="collapsed")
     
-    if st.button("Analiza (Free)"):
+    # Testo del bottone dinamico in base all'admin
+    bottoni_testo = "Analizza (Illimitato 🔓)" if is_admin else "Analiza (Free)"
+    
+    if st.button(bottoni_testo):
         if not user_text_input.strip():
             st.warning("Inserisci prima la lista delle spese.")
         else:
-            if is_admin or st.session_state["free_complete"] > 0:
-                if not is_admin:
-                    st.session_state["free_complete"] -= 1
-                
+            # Controllo permessi: se è admin bypassa totalmente i limiti dei tentativi free
+            permesso_ok = False
+            if is_admin:
+                permesso_ok = True
+            elif st.session_state["free_complete"] > 0:
+                st.session_state["free_complete"] -= 1
+                permesso_ok = True
+
+            if not permesso_ok:
+                st.error("Hai esaurito le analisi gratuite giornaliere. Inserisci la password admin nella barra laterale per avere accesso illimitato!")
+            else:
                 if not gemini_disponibile:
                     st.error("⚠️ Chiave API di Gemini non configurata correttamente nei Secrets.")
                 else:
-                    with st.spinner("💎 Analisi dettagliata del bilancio in corso (attendi un istante)..."):
-                        try:
-                            prompt = f"""
-                            Agisci come un direttore finanziario personale di altissimo livello. Analizza la lista di spese e/o entrate fornita dall'utente.
-                            Fornisci una risposta approfondita, professionale e formattata esattamente con questa struttura e con le icone indicate:
+                    with st.spinner("💎 Generazione analisi finanziaria approfondita in corso..."):
+                        prompt = f"""
+                        Agisci come un direttore finanziario personale di altissimo livello. Analizza la lista di spese e/o entrate fornita dall'utente.
+                        Fornisci una risposta approfondita, professionale e formattata esattamente con questa struttura e con le icone indicate:
 
-                            📊 **Riepilogo del Budget**
-                            - Entrate totali: [calcola o stima in base al testo]
-                            - Spese totali: [somma esatta delle voci]
-                            - Rimante (Risparmio): [differenza e percentuale]
+                        📊 **Riepilogo del Budget**
+                        - Entrate totali: [calcola o stima in base al testo]
+                        - Spese totali: [somma esatta delle voci]
+                        - Rimante (Risparmio): [differenza e percentuale]
 
-                            🔍 **Analisi della situazione**
-                            [Spiega lo stato di salute finanziaria in chiaro, valutando se si è in pareggio o a rischio imprevisti].
+                        🔍 **Analisi della situazione**
+                        [Spiega lo stato di salute finanziaria in chiaro, valutando se si è in pareggio o a rischio imprevisti].
 
-                            💪 **Punti di forza:**
-                            - [Analizza le voci positive]
+                        💪 **Punti di forza:**
+                        - [Analizza le voci positive]
 
-                            ⚠ **Punti critici (dove intervenire):**
-                            - [Analizza le voci alte e dai consigli pratici di taglio].
+                        ⚠ **Punti critici (dove intervenire):**
+                        - [Analizza le voci alte e dai consigli pratici di taglio].
 
-                            💡 **Proposta di ottimizzazione (Obiettivo Risparmio)**
-                            Se provassi a ricalibrare le spese in questo modo:
-                            - [Elenca le singole voci corrette/ottimizzate]
-                            - 👈 **Nuove uscite:** [Totale ottimizzato]
-                            - 👈 **Nuovo risparmio mensile:** [Nuovo importo e percentuale]
-                            [Concludi con una frase motivazionale].
+                        💡 **Proposta di ottimizzazione (Obiettivo Risparmio)**
+                        Se provassi a ricalibrare le spese in questo modo:
+                        - [Elenca le singole voci corrette/ottimizzate]
+                        - 👈 **Nuove uscite:** [Totale ottimizzato]
+                        - 👈 **Nuovo risparmio mensile:** [Nuovo importo e percentuale]
+                        [Concludi con una frase motivazionale].
 
-                            Testo inserito dall'utente:
-                            {user_text_input}
-                            """
-                            
-                            # Meccanismo di sicurezza integrato anti-quota (riprova fino a 2 volte se incontra il limite)
-                            response = None
-                            for tentativi in range(2):
-                                try:
-                                    response = model.generate_content(prompt)
-                                    break
-                                except Exception as api_err:
-                                    if "429" in str(api_err) or "quota" in str(api_err).lower():
-                                        if tentativi == 0:
-                                            time.sleep(12) # Attende 12 secondi e riprova in automatico
-                                            continue
-                                    raise api_err
+                        Testo inserito dall'utente:
+                        {user_text_input}
+                        """
+                        
+                        response = None
+                        successo = False
+                        
+                        # Tenta la chiamata gestendo eventuali colli di bottiglia temporanei dei server Google
+                        for tentativo in range(3):
+                            try:
+                                response = model.generate_content(prompt)
+                                if response and response.text:
+                               cez = True
+                                successo = True
+                                break
+                            except Exception as api_err:
+                                error_str = str(api_err)
+                                if ("429" in error_str or "quota" in error_str.lower()) and tentativo < 2:
+                                    time.sleep(6) # Pausa breve e pulita prima del retry
+                                    continue
+                                else:
+                                    if tentativo == 2:
+                                        st.error(f"Errore di comunicazione con Google API: {api_err}")
 
-                            if response and response.text:
-                                st.success("Analisi completata!")
-                                st.markdown(response.text)
-                            else:
-                                st.error("L'IA ha restituito una risposta vuota. Riprova tra un attimo.")
-                        except Exception as e:
-                            error_str = str(e)
-                            if "429" in error_str or "quota" in error_str.lower():
-                                st.warning("⏳ **Traffico intenso sulla chiave API gratuita.** Google richiede qualche secondo di pausa. Riprova a cliccare su 'Analiza (Free)' tra circa 15 secondi.")
-                            else:
-                                st.error(f"Errore durante l'analisi: {e}")
-            else:
-                st.error("Hai esaurito le analisi gratuite giornaliere. Sblocca il piano illimitato dalla barra laterale!")
+                        if successo and response and response.text:
+                            st.success("Analisi completata con successo!")
+                            st.markdown(response.text)
+                        else:
+                            st.warning("⏳ **I server di Google stanno ricevendo molte richieste in questo secondo.** Attendi 10 secondi e clicca nuovamente sul pulsante d'analisi.")
 
     st.markdown("---")
     st.subheader("📁 Carica Screenshot o Documento")
