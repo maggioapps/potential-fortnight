@@ -1,4 +1,3 @@
-
 import streamlit as st
 from datetime import date
 import time
@@ -129,14 +128,12 @@ with tab1:
     st.subheader("Incolla qui la lista delle spese:")
     user_text_input = st.text_area("Spese:", placeholder="Es. 2000 stipendio, 500 affitto...", label_visibility="collapsed")
     
-    # Testo del bottone dinamico in base all'admin
     bottoni_testo = "Analizza (Illimitato 🔓)" if is_admin else "Analiza (Free)"
     
     if st.button(bottoni_testo):
         if not user_text_input.strip():
             st.warning("Inserisci prima la lista delle spese.")
         else:
-            # Controllo permessi: se è admin bypassa totalmente i limiti dei tentativi free
             permesso_ok = False
             if is_admin:
                 permesso_ok = True
@@ -183,18 +180,16 @@ with tab1:
                         response = None
                         successo = False
                         
-                        # Tenta la chiamata gestendo eventuali colli di bottiglia temporanei dei server Google
                         for tentativo in range(3):
                             try:
                                 response = model.generate_content(prompt)
                                 if response and response.text:
-                               cez = True
-                                successo = True
-                                break
+                                    successo = True
+                                    break
                             except Exception as api_err:
                                 error_str = str(api_err)
                                 if ("429" in error_str or "quota" in error_str.lower()) and tentativo < 2:
-                                    time.sleep(6) # Pausa breve e pulita prima del retry
+                                    time.sleep(6)
                                     continue
                                 else:
                                     if tentativo == 2:
