@@ -10,24 +10,6 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- 🤖 CONFIGURAZIONE GEMINI ---
-try:
-    api_key = st.secrets["GEMINI_API_KEY"]
-    genai.configure(api_key=api_key)
-    
-    generation_config = {
-        "temperature": 0.3,
-        "max_output_tokens": 1500,
-    }
-    
-    model = genai.GenerativeModel(
-        model_name='gemini-3.8-flash',
-        generation_config=generation_config
-    )
-    gemini_disponibile = True
-except Exception as e:
-    gemini_disponibile = False
-
 # --- 🎨 STILE GRAFICO PREMIUM ---
 st.markdown("""
 <style>
@@ -67,7 +49,6 @@ oggi = date.today()
 if "last_date" not in st.session_state or st.session_state["last_date"] != oggi:
     st.session_state["last_date"] = oggi
     st.session_state["free_complete"] = 3
-    st.session_state["free_limited"] = 1
 
 # --- LINGUE & DIZIONARIO ---
 LANGUAGES = {
@@ -81,11 +62,70 @@ t = LANGUAGES[selected_lang]
 st.title(t["title"])
 st.write(t["subtitle"])
 
-# --- SIDEBAR: GUIDA & ADMIN ---
+# --- SIDEBAR: CONFIGURAZIONE CHIAVI FACILE ---
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 📱 Installa sul Telefono")
-st.sidebar.info("Tocca i **tre puntini ⠇** in alto a destra nel browser e seleziona **'Aggiungi a schermata Home'**.")
+st.sidebar.header("🔑 Gestione Chiavi API")
+st.sidebar.info("Incolla qui sotto le tue chiavi API di Gemini (una per riga). L'app le userà a rotazione per azzerare i blocchi!")
 
+# Casella di testo nella sidebar per inserire le chiavi direttamente
+input_keys_text = st.sidebar.text_area("Chiavi API (1 per riga):", placeholder="AIzaSy...\nAIzaSy...", height=100)
+
+# Estraiamo le chiavi inserite dall'utente
+api_keys = [k.strip() for k in input_keys_text.split("\n") if k.strip()]
+
+# Se non le ha messe nella sidebar, proviamo a leggere dai Secrets per comodità (se esistono)
+if not api_keys:
+    for i in range(1, 6):
+        try:
+            k = st.secrets.get(f"GEMINI_API_KEY_{i}")
+            if k:
+                api_keys.append(k)
+        except Exception:
+            pass
+
+# --- FUNZIONE DI ROTAZIONE AUTOMATICA ---
+def genera_con_rotazione(prompt):
+    if not api_keys:
+        raise Exception("Inserisci almeno una chiave API nella barra laterale a sinistra!")
+    
+    if "key_index" not in st.session_state:
+        st.session_state["key_index"] = 0
+
+    tentativi_chiavi = len(api_keys)
+    for tentativo_k in range(tentativi_chiavi):
+        current_idx = (st.session_state["key_index"] + tentativo_k) % tentativi_chiavi
+        active_key = api_keys[current_idx]
+        
+        try:
+            genai.configure(api_key=active_key)
+            generation_config = {
+                "temperature": 0.3,
+                "max_output_tokens": 1500,
+            }
+            model = genai.GenerativeModel(
+                model_name='gemini-3.8-flash',
+                generation_config=generation_config
+            )
+            
+            response = model.generate_content(prompt)
+            if response and response.text:
+                st.session_state["key_index"] = current_idx
+                return response.text
+                
+        except Exception as api_err:
+            error_str = str(api_err)
+            if "429" in error_str or "quota" in error_str.lower():
+                if tentativo_k == tentativi_chiavi - 1:
+                    time.sleep(3)
+                continue
+            else:
+                raise api_err
+                
+    raise Exception("Tutte le chiavi API inserite hanno esaurito la quota giornaliera. Aggiungine altre!")
+
+gemini_disponibile = len(api_keys) > 0
+
+# --- SIDEBAR: ADMIN & STRIPE ---
 st.sidebar.markdown("---")
 st.sidebar.header("🔐 Area Personale / Admin")
 admin_password = st.sidebar.text_input("Password Segreta", type="password")
@@ -93,9 +133,9 @@ admin_password = st.sidebar.text_input("Password Segreta", type="password")
 try:
     real_password = st.secrets["ADMIN_PASSWORD"]
 except Exception:
-    real_password = ""
+    real_password = "admin" # Password di fallback se non configurata
 
-is_admin = (admin_password == real_password)
+is_admin = (admin_password == real_password) and (real_password != "")
 
 if is_admin:
     st.sidebar.success("🔑 Accesso Admin Riconosciuto!")
@@ -105,7 +145,6 @@ else:
         st.sidebar.error("Password errata.")
     st.sidebar.info(f"Stai usando il piano **Free**: massimo 3 analisi al giorno.\nRimaste: {st.session_state['free_complete']}/3")
 
-# --- PIANI STRIPE ---
 st.sidebar.markdown("---")
 st.sidebar.header("💳 Piani & Abbonamenti")
 tier_choices = [
@@ -128,7 +167,7 @@ with tab1:
     st.subheader("Incolla qui la lista delle spese:")
     user_text_input = st.text_area("Spese:", placeholder="Es. 2000 stipendio, 500 affitto...", label_visibility="collapsed")
     
-    bottoni_testo = "Analizza (Illimitato 🔓)" if is_admin else "Analiza (Free)"
+    bottoni_testo = "Analizza (Illimitato 🔓)" if is_admin else "Analizza (Free)"
     
     if st.button(bottoni_testo):
         if not user_text_input.strip():
@@ -145,7 +184,7 @@ with tab1:
                 st.error("Hai esaurito le analisi gratuite giornaliere. Inserisci la password admin nella barra laterale per avere accesso illimitato!")
             else:
                 if not gemini_disponibile:
-                    st.error("⚠️ Chiave API di Gemini non configurata correttamente nei Secrets.")
+                    st.error("⚠️ Inserisci almeno una chiave API nella casella dedicata nella barra laterale a sinistra per procedere.")
                 else:
                     with st.spinner("💎 Generazione analisi finanziaria approfondita in corso..."):
                         prompt = f"""
@@ -177,29 +216,12 @@ with tab1:
                         {user_text_input}
                         """
                         
-                        response = None
-                        successo = False
-                        
-                        for tentativo in range(3):
-                            try:
-                                response = model.generate_content(prompt)
-                                if response and response.text:
-                                    successo = True
-                                    break
-                            except Exception as api_err:
-                                error_str = str(api_err)
-                                if ("429" in error_str or "quota" in error_str.lower()) and tentativo < 2:
-                                    time.sleep(6)
-                                    continue
-                                else:
-                                    if tentativo == 2:
-                                        st.error(f"Errore di comunicazione con Google API: {api_err}")
-
-                        if successo and response and response.text:
+                        try:
+                            risultato_testo = genera_con_rotazione(prompt)
                             st.success("Analisi completata con successo!")
-                            st.markdown(response.text)
-                        else:
-                            st.warning("⏳ **I server di Google stanno ricevendo molte richieste in questo secondo.** Attendi 10 secondi e clicca nuovamente sul pulsante d'analisi.")
+                            st.markdown(risultato_testo)
+                        except Exception as e:
+                            st.error(f"Errore durante l'analisi: {e}")
 
     st.markdown("---")
     st.subheader("📁 Carica Screenshot o Documento")
