@@ -1,5 +1,6 @@
 import streamlit as st
 from datetime import date
+import google.generativeai as genai
 
 # Configurazione della pagina
 st.set_page_config(
@@ -8,7 +9,17 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- 🎨 1. STILE GRAFICO E SCRIPT AUTOMATICO DI INSTALLAZIONE (PWA) ---
+# --- 🤖 CONFIGURAZIONE GEMINI API ---
+try:
+    api_key = st.secrets["GEMINI_API_KEY"]
+    genai.configure(api_key=api_key)
+    # Usiamo il modello standard di Gemini
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    gemini_disponibile = True
+except Exception as e:
+    gemini_disponibile = False
+
+# --- 🎨 1. STILE GRAFICO PULITO ---
 st.markdown("""
 <style>
     .stApp {
@@ -39,48 +50,7 @@ st.markdown("""
         color: #065f46 !important;
         font-family: 'Inter', sans-serif;
     }
-    
-    /* Stile per il pulsante di installazione automatica */
-    #install-app-btn {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        color: white;
-        padding: 12px 20px;
-        border-radius: 12px;
-        text-align: center;
-        font-weight: bold;
-        display: none; /* Si attiva automaticamente quando il browser rileva che l'app è installabile */
-        border: none;
-        width: 100%;
-        cursor: pointer;
-        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
-        margin-bottom: 15px;
-        font-size: 16px;
-    }
 </style>
-
-<script>
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        const installBtn = document.getElementById('install-app-btn');
-        if (installBtn) {
-            installBtn.style.display = 'block';
-        }
-    });
-
-    function installApp() {
-        if (deferredPrompt) {
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then((choiceResult) => {
-                if (choiceResult.outcome === 'accepted') {
-                    console.log('Utente ha accettato l installazione');
-                }
-                deferredPrompt = null;
-            });
-        }
-    }
-</script>
 """, unsafe_allow_html=True)
 
 # --- 2. GESTIONE SESSIONE PER LE ANALISI GRATUITE GIORNALIERE ---
@@ -103,7 +73,7 @@ LANGUAGES = {
     "العربية": {"title": "Split & Save AI - التوفير الذكي 💡", "unlimited": "الحساب غير المحدود نشط (Admin)", "review": "تقييمات موثوقة", "goal": "أهدافك الشخصية"},
     "日本語": {"title": "Split & Save AI - スマート節約 💡", "unlimited": "無制限アカウント有効 (Admin)", "review": "確認済みレビュー", "goal": "あなたの個人的な目標"},
     "Hindi": {"title": "Split & Save AI - स्मार्ट बचत 💡", "unlimited": "अिमिटेड अकाउंट सक्रिय (Admin)", "review": "समीक्षाएं", "goal": "आपके व्यक्तिगत लक्ष्य"},
-    "Polski": {"title": "Split & Save AI - Inteligentne Oszczędzanie 💡", "unlimited": "Konto bez limitu aktywne (Admin)", "review": "Zweryfikowane opinie", "goal": "Twoje cele osobiste"}
+    "Polski": {"title": "Split & Save AI - Inteligentne Oszczędzanie 💡", "unlimited": "Konto bez limitu aktywne (Admin)", "review": "Zweryfinowane opinie", "goal": "Twoje cele osobiste"}
 }
 
 selected_lang = st.sidebar.selectbox("🌍 Lingua / Language", list(LANGUAGES.keys()), index=0)
@@ -111,27 +81,24 @@ t = LANGUAGES[selected_lang]
 
 st.title(t["title"])
 
-# --- 4. TASTO DI INSTALLAZIONE AUTOMATICA NELLA SIDEBAR ---
+# --- 4. GUIDA INSTALLAZIONE CELLULARE ---
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 📱 Installa l'App")
+st.sidebar.markdown("### 📱 Come avere l'App sul Telefono")
+st.sidebar.info(
+    "Per aggiungere subito l'app alla schermata Home del tuo smartphone:\n\n"
+    "1️⃣ Tocca i **tre puntini ⠇** in alto a destra nel browser (Chrome).\n"
+    "2️⃣ Seleziona la voce **'Aggiungi a schermata Home'** o **'Installa app'**."
+)
 
-# Pulsante HTML interattivo che appare automaticamente su mobile quando pronto
-st.sidebar.markdown("""
-<button id="install-app-btn" onclick="installApp()">📥 Installa Subito</button>
-""", unsafe_allow_html=True)
-
-# Testo di supporto nel caso il browser non mostri il prompt automatico
-st.sidebar.caption("Se il pulsante non appare, puoi comunque aggiungere l'app alla schermata Home dai tre puntini in alto a destra del browser.")
-
-# --- 5. ACCESSO AMMINISTRATIVO SICURO E CONTEGGIO GRATUITO ---
+# --- 5. ACCESSO AMMINISTRATIVO SICURO ---
 st.sidebar.markdown("---")
 st.sidebar.header("🔐 Area Personale / Admin")
 admin_password = st.sidebar.text_input("Inserisci Password Segreta", type="password")
 
 try:
     real_password = st.secrets["ADMIN_PASSWORD"]
-except:
-    real_password = "DefaultPasswordSeMancanoISecrets"
+except Exception:
+    real_password = "PasswordNonImpostata"
 
 is_admin = (admin_password == real_password)
 
@@ -143,7 +110,7 @@ else:
         st.sidebar.error("Password errata.")
     st.sidebar.info(f"🎁 **Analisi gratuite di oggi:**\n- Complete: {st.session_state['free_complete']}/2\n- Limitate: {st.session_state['free_limited']}/1")
 
-# --- 6. GESTIONE DEI PIANI STRIPE (Abbonamenti) ---
+# --- 6. GESTIONE PIANI STRIPE ---
 st.sidebar.markdown("---")
 st.sidebar.header("💳 Scegli un Piano / Abbonamento")
 
@@ -175,7 +142,7 @@ STRIPE_PAYMENT_URLS = {
 
 st.sidebar.markdown(f"[Procedi al Checkout Sicuro]({STRIPE_PAYMENT_URLS[selected_tier]})")
 
-# --- 7. FUNZIONI PRINCIPALI DELL'APP ---
+# --- 7. FUNZIONI PRINCIPALI DELL'APP (CON INTEGRAZIONE GEMINI) ---
 tab1, tab2, tab3, tab4 = st.tabs(["📥 Inserimento", "🎯 Obiettivi & Sblocco", "🎤 Voce & SMS", "⭐ Recensioni"])
 
 with tab1:
@@ -189,8 +156,18 @@ with tab1:
             if is_admin or st.session_state["free_complete"] > 0:
                 if not is_admin:
                     st.session_state["free_complete"] -= 1
-                st.success("✨ **Analisi Completata con Successo!** Ecco i dettagli elaborati dal tuo testo.")
-                st.info(f"Testo analizzato: *{user_text_input}*")
+                
+                if not gemini_disponibile:
+                    st.error("⚠️ Chiave API di Gemini non configurata correttamente nei Secrets.")
+                else:
+                    with st.spinner("🤖 L'Intelligenza Artificiale sta analizzando le tue spese..."):
+                        try:
+                            prompt = f"Analizza questo testo finanziario/di spesa, suddividi le voci, calcola i totali e dai consigli di risparmio in modo chiaro e strutturato: {user_text_input}"
+                            response = model.generate_content(prompt)
+                            st.success("✨ **Analisi Completata con Successo!**")
+                            st.markdown(response.text)
+                        except Exception as e:
+                            st.error(f-f"Errore durante l'analisi con l'IA: {e}")
             else:
                 st.error("Hai esaurito le 2 analisi complete gratuite di oggi. Scegli un pacchetto nella barra laterale!")
 
@@ -224,10 +201,6 @@ with tab2:
     user_goal = st.text_input("Crea o aggiorna il tuo obiettivo personale di risparmio:")
     if user_goal:
         st.info(f"Obiettivo registrato: {user_goal}")
-    
-    st.markdown("---")
-    st.markdown("### 💡 Consiglio d'oro per la schermata di blocco")
-    st.info("Imposta il tuo risparmio giornaliero come sfondo della schermata di blocco per mantenere alta la motivazione ed evitare spese inutili!")
 
 with tab3:
     st.subheader("📲 Inserimento Rapido SMS / Notifiche")
@@ -236,14 +209,7 @@ with tab3:
         if is_admin or st.session_state["free_complete"] > 0 or st.session_state["free_limited"] > 0:
             st.success("Testo SMS analizzato correttamente!")
         else:
-            st.error("Analisi gratuite giornaliere esaurite. Scegli un piano o pacchetto nella barra laterale.")
-    
-    st.markdown("### 🎤 Comando Vocale")
-    if st.button("🎤 Avvia Registrazione Vocale"):
-        if is_admin or st.session_state["free_complete"] > 0 or st.session_state["free_limited"] > 0:
-            st.warning("Ascolto vocale in corso... Analisi completata!")
-        else:
-            st.error("Analisi gratuite giornaliere esaurite. Scegli un piano o pacchetto nella barra laterale.")
+            st.error("Analisi gratuite giornaliere esaurite.")
 
 with tab4:
     st.subheader(f"⭐ {t['review']}")
