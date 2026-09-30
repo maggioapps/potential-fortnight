@@ -44,21 +44,21 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# --- CONTATORE VISITE IN ALTO ---
+if "visite" not in st.session_state:
+    st.session_state.visite = 1
+
+# Mostriamo il contatore in alto con un look pulito
+col_top1, col_top2, col_top3 = st.columns([1, 2, 1])
+with col_top2:
+    st.metric(label="👥 Persone che hanno visitato l'app", value=st.session_state.visite)
+
+st.markdown("---")
+
 st.title("Split & Save AI 💡")
 st.write("Il tuo direttore finanziario personale e gratuito.")
 
-# --- INIZIALIZZAZIONE CONTATORE VISITE ---
-if "visite" not in st.session_state:
-    st.session_state.visite = 1
-else:
-    # Incrementa solo se è una nuova sessione o ricaricamento (puoi anche gestirlo tramite un contatore globale se desideri)
-    pass
-
-# --- SIDEBAR: CONTATORE, RECENSIONI E INSTALLAZIONE ---
-st.sidebar.markdown("### 📊 Statistiche App")
-st.sidebar.metric(label="Visite totali registrate", value=st.session_state.visite)
-
-st.sidebar.markdown("---")
+# --- SIDEBAR: INSTALLAZIONE E RECENSIONI ---
 st.sidebar.markdown("### ⭐ Recensioni degli utenti")
 st.sidebar.markdown("⭐⭐⭐⭐⭐ **4.9 / 5.0**")
 st.sidebar.info("✨ *'Questa app mi ha svoltato la gestione del budget!'* — Marco R.")
