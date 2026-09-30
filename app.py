@@ -96,7 +96,7 @@ with tab1:
             with st.spinner("💎 Generazione analisi finanziaria in corso..."):
                 prompt = f"""
                 Agisci come un direttore finanziario personale. Analizza la lista di spese e/o entrate fornita dall'utente.
-                Usa questa struttura esatta con le icone:
+                Usa questa struttura esatta con las icone:
 
                 📊 **Riepilogo del Budget**
                 - Entrate totali: [valore]
@@ -127,7 +127,6 @@ with tab1:
                 except Exception as e:
                     st.error(f"Errore: {e}")
 
-    # Il box per le domande e i tasti appaiono SOLO DOPO che l'analisi è stata fatta
     if st.session_state.analisi_fatta and st.session_state.testo_risultato:
         st.markdown("---")
         st.markdown(st.session_state.testo_risultato)
@@ -154,9 +153,11 @@ with tab1:
                 st.rerun()
 
 with tab2:
-    st.subheader("📁 Importa / Esporta File")
-    # type=None permette di caricare qualsiasi tipo di file (PDF, Excel, Word, TXT, CSV, ecc.)
-    uploaded_file = st.file_uploader("Carica qualsiasi file (PDF, Excel, Word, TXT, ecc.)", type=None)
+    st.subheader("📁 Importa / Esporta File dal Telefono")
+    st.info("💡 **Consiglio**: Quando tocchi 'Browse files', se compare il menu con la fotocamera, cerca l'opzione **'File'**, **'Archivio'** o **'Download'** per scegliere i documenti dalla memoria del telefono.")
+    
+    # Specificare i formati principali forza Android/iOS a mostrare l'esplora risorse/file manager
+    uploaded_file = st.file_uploader("Seleziona un documento (PDF, TXT, CSV, XLSX, Immagini)", type=["pdf", "txt", "csv", "xlsx", "png", "jpg", "jpeg"])
     
     if uploaded_file:
         st.success(f"File caricato con successo: **{uploaded_file.name}**")
