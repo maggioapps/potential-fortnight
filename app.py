@@ -84,7 +84,7 @@ st.sidebar.info("Tocca i **tre puntini ⠇** in alto a destra nel browser e sele
 st.sidebar.markdown("---")
 st.sidebar.info("ℹ️ **App 100% Gratuita**: Nessun abbonamento richiesto.")
 
-# Inizializzazione dello stato per la chat/domande successive
+# Inizializzazione dello stato
 if "analisi_effettuata" not in st.session_state:
     st.session_state.analisi_effettuata = False
 if "ultimo_risultato" not in st.session_state:
@@ -145,11 +145,11 @@ with tab1:
                     except Exception as api_err:
                         st.error(f"Errore durante l'analisi: {api_err}")
 
-    # Mostra l'analisi se è già stata effettuata
+    # 💡 L'AREA DEI RISULTATI E DELLE DOMANDE EXTRA APPARE SOLO SE L'ANALISI È STATA FATTA
     if st.session_state.analisi_effettuata and st.session_state.ultimo_risultato:
+        st.markdown("---")
         st.markdown(st.session_state.ultimo_risultato)
         
-        # 💡 BARRA PER DOMANDE O DUBBI (APPARE SOLO DOPO L'ANALISI)
         st.markdown("---")
         st.subheader("❓ Domande o Dubbi sull'analisi")
         user_question = st.text_input("Vuoi chiedere un chiarimento o approfondire un punto specifico?", placeholder="Es. Come posso tagliare ulteriormente sulle spese vive?")
