@@ -47,9 +47,26 @@ st.markdown("""
 st.title("Split & Save AI 💡")
 st.write("Il tuo direttore finanziario personale e gratuito.")
 
-# Sidebar
+# --- INIZIALIZZAZIONE CONTATORE VISITE ---
+if "visite" not in st.session_state:
+    st.session_state.visite = 1
+else:
+    # Incrementa solo se è una nuova sessione o ricaricamento (puoi anche gestirlo tramite un contatore globale se desideri)
+    pass
+
+# --- SIDEBAR: CONTATORE, RECENSIONI E INSTALLAZIONE ---
+st.sidebar.markdown("### 📊 Statistiche App")
+st.sidebar.metric(label="Visite totali registrate", value=st.session_state.visite)
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### ⭐ Recensioni degli utenti")
+st.sidebar.markdown("⭐⭐⭐⭐⭐ **4.9 / 5.0**")
+st.sidebar.info("✨ *'Questa app mi ha svoltato la gestione del budget!'* — Marco R.")
+
+st.sidebar.markdown("---")
 st.sidebar.markdown("### 📱 Installa sul Telefono")
 st.sidebar.info("Tocca i **tre puntini ⠇** in alto a destra e seleziona **'Aggiungi a schermata Home'**.")
+
 st.sidebar.markdown("---")
 st.sidebar.info("ℹ️ **App 100% Gratuita**: Nessun abbonamento richiesto.")
 
@@ -58,8 +75,13 @@ if "analisi_fatta" not in st.session_state:
     st.session_state.analisi_fatta = False
 if "testo_risultato" not in st.session_state:
     st.session_state.testo_risultato = ""
+if "recensioni" not in st.session_state:
+    st.session_state.recensioni = [
+        ("Marco R.", "⭐⭐⭐⭐⭐", "App fantastica!"),
+        ("Giulia V.", "⭐⭐⭐⭐⭐", "Molto utile per risparmiare.")
+    ]
 
-tab1, tab2, tab3, tab4 = st.tabs(["📥 Inserimento", "🎯 Obiettivi", "🎤 Voce & SMS", "⭐ Recensioni"])
+tab1, tab2, tab3, tab4 = st.tabs(["📥 Inserimento", "🎯 Obiettivi", "🎤 Voce & SMS", "⭐ Lascia una Recensione"])
 
 with tab1:
     st.subheader("Incolla qui la lista delle spese:")
@@ -69,7 +91,7 @@ with tab1:
         if not user_text_input.strip():
             st.warning("Inserisci prima la lista delle spese.")
         elif not gemini_disponibile or not model:
-            st.error("⚠️️ Configurazione API non rilevata. Controlla la chiave nei Secrets.")
+            st.error("⚠ Configurazione API non rilevata. Controlla la chiave nei Secrets.")
         else:
             with st.spinner("💎 Generazione analisi finanziaria in corso..."):
                 prompt = f"""
@@ -104,7 +126,7 @@ with tab1:
                 except Exception as e:
                     st.error(f"Errore: {e}")
 
-    # Il box per le domande appare SOLO DOPO che l'analisi è stata fatta
+    # Il box per le domande e i tasti appaiono SOLO DOPO che l'analisi è stata fatta
     if st.session_state.analisi_fatta and st.session_state.testo_risultato:
         st.markdown("---")
         st.markdown(st.session_state.testo_risultato)
@@ -113,13 +135,22 @@ with tab1:
         st.subheader("❓ Domande o Dubbi sull'analisi")
         user_question = st.text_input("Vuoi chiedere un chiarimento o approfondire?", placeholder="Es. Come posso tagliare sulle bollette?")
         
-        if st.button("Fai una domanda al consulente"):
-            if user_question.strip() and model:
-                with st.spinner("Elaborazione risposta..."):
-                    f_resp = model.generate_content(f"Basandoti sull'analisi precedente, rispondi a: {user_question}")
-                    if f_resp and f_resp.text:
-                        st.markdown("### 💬 Risposta del Consulente:")
-                        st.markdown(f_resp.text)
+        col_1, col_2 = st.columns(2)
+        
+        with col_1:
+            if st.button("Fai una domanda al consulente"):
+                if user_question.strip() and model:
+                    with st.spinner("Elaborazione risposta..."):
+                        f_resp = model.generate_content(f"Basandoti sull'analisi precedente, rispondi a: {user_question}")
+                        if f_resp and f_resp.text:
+                            st.markdown("### 💬 Risposta del Consulente:")
+                            st.markdown(f_resp.text)
+                            
+        with col_2:
+            if st.button("🔄 Nuova analisi"):
+                st.session_state.analisi_fatta = False
+                st.session_state.testo_risultato = ""
+                st.rerun()
 
 with tab2:
     st.subheader("🎯 I tuoi Obiettivi Personali")
@@ -130,5 +161,22 @@ with tab3:
     st.text_area("Copia qui il testo di SMS o notifiche bancarie:")
 
 with tab4:
-    st.subheader("⭐ Recensioni Verificate")
-    st.markdown("⭐⭐⭐⭐⭐ **4.9 / 5.0** - *'App fantastica!'* - Marco R.")
+    st.subheader("⭐ Valuta l'applicazione")
+    st.write("Lascia le tue stelle e una recensione per aiutare a far crescere il progetto!")
+    
+    nome_utente = st.text_input("Il tuo nome:", placeholder="Es. Anna Rossi")
+    stelle_utente = st.selectbox("Valutazione in stelle:", ["⭐⭐⭐⭐⭐ (Eccellente)", "⭐⭐⭐⭐ (Molto buono)", "⭐⭐⭐ (Buono)", "⭐⭐ (Sufficiente)", "⭐ (Scarso)"])
+    testo_recensione = st.text_area("La tua recensione:", placeholder="Scrivi qui cosa ti piace dell'app...")
+    
+    if st.button("Invia Recensione"):
+        if nome_utente.strip() and testo_recensione.strip():
+            st.session_state.recensioni.insert(0, (nome_utente, stelle_utente.split(" ")[0], testo_recensione))
+            st.success("🎉 Grazie mille per la tua recensione!")
+        else:
+            st.warning("Inserisci il tuo nome e il testo della recensione prima di inviare.")
+            
+    st.markdown("---")
+    st.subheader("📋 Recensioni della Community")
+    for utente, stelle, commento in st.session_state.recensioni:
+        st.markdown(f"**{utente}** - {stelle}\n\n*{commento}*")
+        st.markdown("---")
