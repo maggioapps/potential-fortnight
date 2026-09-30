@@ -1,6 +1,7 @@
 import streamlit as st
 import google.generativeai as genai
 import io
+import pypdf
 
 # Configurazione della pagina
 st.set_page_config(
@@ -18,14 +19,14 @@ try:
     if api_key:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(
-            model_name='gemini-3.8-flash',
+            model_name='gemini-2.5-flash',
             generation_config={"temperature": 0.3, "max_output_tokens": 1500}
         )
         gemini_disponibile = True
 except Exception:
     gemini_disponibile = False
 
-# Stile grafico
+# Stile grafico avanzato
 st.markdown("""
 <style>
     .stApp {
@@ -75,7 +76,7 @@ if "recensioni" not in st.session_state:
         ("Giulia V.", "⭐⭐⭐⭐⭐", "Molto utile per risparmiare.")
     ]
 
-# 5 Tab ordinate
+# 5 Tab ordinate e complete
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📥 Inserimento txt", 
     "📁 Importa / Esporta file", 
@@ -84,49 +85,58 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "⭐ Commenti & Statistiche"
 ])
 
+# Funzione di utilità per l'analisi finanziaria con IA
+def esegui_analisi_ia(testo_input, titolo_sorgente="Testo utente"):
+    if not gemini_disponibile or not model:
+        st.error("⚠ Configurazione API non rilevata. Controlla la chiave nei Secrets.")
+        return
+    
+    with st.spinner("💎 Generazione analisi finanziaria in corso..."):
+        prompt = f"""
+        Agisci come un direttore finanziario personale. Analizza i dati finanziari, le spese, le entrate o i movimenti forniti.
+        Sorgente dati: {titolo_sorgente}
+        
+        Usa questa struttura esatta con le icone:
+
+        📊 **Riepilogo del Budget**
+        - Entrate totali: [valore stimato o reale]
+        - Spese totali: [valore stimato o reale]
+        - Rimante (Risparmio): [valore stimato o reale]
+
+        🔍 **Analisi della situazione**
+        [Testo di analisi approfondito]
+
+        💪 **Punti di forza:**
+        - [Punti]
+
+        ⚠ **Punti critici:**
+        - [Punti]
+
+        💡 **Proposta di ottimizzazione**
+        - [Consigli pratici]
+        
+        Dati forniti:
+        {testo_input}
+        """
+        try:
+            response = model.generate_content(prompt)
+            if response and response.text:
+                st.session_state.analisi_fatta = True
+                st.session_state.testo_risultato = response.text
+                st.session_state.conteggio_usi += 1
+                st.success("Analisi completata con successo!")
+        except Exception as e:
+            st.error(f"Errore durante l'analisi: {e}")
+
 with tab1:
     st.subheader("Incolla qui la lista delle spese:")
-    user_text_input = st.text_area("Spese:", placeholder="Es. 2000 stipendio, 500 affitto...", label_visibility="collapsed")
+    user_text_input = st.text_area("Spese:", placeholder="Es. 2000 stipendio, 500 affitto...", label_visibility="collapsed", key="txt_input")
     
     if st.button("Analizza Spese"):
         if not user_text_input.strip():
             st.warning("Inserisci prima la lista delle spese.")
-        elif not gemini_disponibile or not model:
-            st.error("⚠ Configurazione API non rilevata. Controlla la chiave nei Secrets.")
         else:
-            with st.spinner("💎 Generazione analisi finanziaria in corso..."):
-                prompt = f"""
-                Agisci come un direttore finanziario personale. Analizza la lista di spese e/o entrate fornita dall'utente.
-                Usa questa struttura esatta con le icone:
-
-                📊 **Riepilogo del Budget**
-                - Entrate totali: [valore]
-                - Spese totali: [valore]
-                - Rimante (Risparmio): [valore]
-
-                🔍 **Analisi della situazione**
-                [Testo di analisi]
-
-                💪 **Punti di forza:**
-                - [Punti]
-
-                ⚠ **Punti critici:**
-                - [Punti]
-
-                💡 **Proposta di ottimizzazione**
-                - [Consigli]
-                
-                Testo utente: {user_text_input}
-                """
-                try:
-                    response = model.generate_content(prompt)
-                    if response and response.text:
-                        st.session_state.analisi_fatta = True
-                        st.session_state.testo_risultato = response.text
-                        st.session_state.conteggio_usi += 1
-                        st.success("Analisi completata!")
-                except Exception as e:
-                    st.error(f"Errore: {e}")
+            esegui_analisi_ia(user_text_input, "Lista testuale")
 
     if st.session_state.analisi_fatta and st.session_state.testo_risultato:
         st.markdown("---")
@@ -134,10 +144,9 @@ with tab1:
         
         st.markdown("---")
         st.subheader("❓ Domande o Dubbi sull'analisi")
-        user_question = st.text_input("Vuoi chiedere un chiarimento o approfondire?", placeholder="Es. Come posso tagliare sulle bollette?")
+        user_question = st.text_input("Vuoi chiedere un chiarimento o approfondire?", placeholder="Es. Come posso tagliare sulle bollette?", key="q_tab1")
         
         col_1, col_2 = st.columns(2)
-        
         with col_1:
             if st.button("Fai una domanda al consulente"):
                 if user_question.strip() and model:
@@ -155,7 +164,7 @@ with tab1:
 
 with tab2:
     st.subheader("📁 Importa File dal Telefono (PDF, TXT, CSV)")
-    st.info("💡 Carica il tuo file o estratto conto dai Download del telefono e premi il pulsante.")
+    st.info("💡 Carica il tuo estratto conto PDF, file TXT o CSV dai Download del telefono.")
     
     uploaded_file = st.file_uploader("Carica file", type=["pdf", "txt", "csv"])
     
@@ -163,60 +172,31 @@ with tab2:
         st.success(f"File caricato: **{uploaded_file.name}**")
         
         if st.button("🚀 Avvia Analisi File"):
-            if not gemini_disponibile or not model:
-                st.error("⚠ Configurazione API non rilevata nei Secrets.")
-            else:
-                with st.spinner("Estrazione contenuto e analisi in corso..."):
-                    testo_estratto = ""
-                    try:
-                        bytes_data = uploaded_file.getvalue()
-                        # Tentativo di lettura come testo semplice o CSV
-                        try:
-                            testo_estratto = bytes_data.decode("utf-8", errors="ignore")
-                        except:
-                            testo_estratto = f"File binario o PDF caricato: {uploaded_file.name}"
+            testo_estratto = ""
+            try:
+                bytes_data = uploaded_file.getvalue()
+                
+                # Gestione specifica ed estrazione avanzata per i file PDF
+                if uploaded_file.name.lower().endswith('.pdf'):
+                    pdf_file_obj = io.BytesIO(bytes_data)
+                    reader = pypdf.PdfReader(pdf_file_obj)
+                    extracted_pages = []
+                    for page in reader.pages:
+                        text = page.extract_text()
+                        if text:
+                            extracted_pages.append(text)
+                    testo_estratto = "\n".join(extracted_pages)
+                    if not testo_estratto.strip():
+                        testo_estratto = "Il PDF sembra scansionato o privo di testo vettoriale selezionabile."
+                else:
+                    # Gestione per TXT o CSV
+                    testo_estratto = bytes_data.decode("utf-8", errors="ignore")
 
-                        # Se è un PDF, cerchiamo di estrarre sequenze di caratteri leggibili base
-                        if uploaded_file.name.endswith('.pdf'):
-                            # Pulizia e ricerca stringhe leggibili nel PDF senza moduli esterni
-                            testo_estratto = "".join([chr(b) if 32 <= b <= 126 or b in (10, 13) else " " for b in bytes_data])
-
-                        prompt_file = f"""
-                        Agisci come un direttore finanziario personale. Analizza i dati finanziari, le spese o le transazioni contenute in questo documento caricato.
-                        Nome file: {uploaded_file.name}
-                        
-                        Usa questa struttura esatta con le icone:
-
-                        📊 **Riepilogo del Budget**
-                        - Entrate totali: [valore]
-                        - Spese totali: [valore]
-                        - Rimante (Risparmio): [valore]
-
-                        🔍 **Analisi della situazione**
-                        [Testo di analisi dettagliato basato sul documento]
-
-                        💪 **Punti di forza:**
-                        - [Punti]
-
-                        ⚠ **Punti critici:**
-                        - [Punti]
-
-                        💡 **Proposta di ottimizzazione**
-                        - [Consigli]
-                        
-                        Contenuto estratto dal documento:
-                        {testo_estratto[:10000]}
-                        """
-                        
-                        response = model.generate_content(prompt_file)
-                        if response and response.text:
-                            st.session_state.analisi_fatta = True
-                            st.session_state.testo_risultato = response.text
-                            st.session_state.conteggio_usi += 1
-                            st.success("Analisi del file completata con successo!")
-                            st.rerun()
-                    except Exception as e:
-                        st.error(f"Errore durante l'elaborazione del file: {e}")
+                # Avvia l'analisi IA con il testo estratto dal documento
+                esegui_analisi_ia(testo_estratto[:15000], f"Documento: {uploaded_file.name}")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Errore durante l'elaborazione del file: {e}")
 
     if st.session_state.analisi_fatta and st.session_state.testo_risultato:
         st.markdown("---")
@@ -224,18 +204,53 @@ with tab2:
 
     st.markdown("---")
     st.write("Esporta i dati delle tue analisi:")
-    if st.button("Esporta dati in formato Testo"):
-        st.download_button("Scarica report", data=st.session_state.testo_risultato if st.session_state.testo_risultato else "Nessuna analisi disponibile", file_name="report_spese.txt")
+    st.download_button("📥 Scarica report in formato Testo", data=st.session_state.testo_risultato if st.session_state.testo_risultato else "Nessuna analisi disponibile", file_name="report_spese.txt")
 
 with tab3:
-    st.subheader("🎤 Voce & SMS")
-    st.text_area("Copia qui il testo di SMS, notifiche bancarie o note vocali trascritte:")
+    st.subheader("🎤 Voce & SMS / Notifiche Bancarie")
+    st.info("Incolla trascrizioni di note vocali o il testo di SMS/notifiche di spesa della tua banca.")
+    sms_voce_input = st.text_area("Testo SMS o trascrizione vocale:", placeholder="Es. 'Hai speso 45.50 EUR presso Supermercato con carta finita in 1234' oppure trascrizione vocale...", key="sms_input")
+    
     if st.button("Analizza SMS / Voce"):
-        st.success("Contenuto analizzato correttamente!")
+        if not sms_voce_input.strip():
+            st.warning("Inserisci prima il testo da analizzare.")
+        else:
+            esegui_analisi_ia(sms_voce_input, "SMS / Nota Vocale")
+
+    if st.session_state.analisi_fatta and st.session_state.testo_risultato:
+        st.markdown("---")
+        st.markdown(st.session_state.testo_risultato)
 
 with tab4:
-    st.subheader("🎯 I tuoi Obiettivi Personali")
-    st.text_input("Crea o aggiorna il tuo obiettivo di risparmio:")
+    st.subheader("🎯 I tuoi Obiettivi Personali di Risparmio")
+    st.info("Imposta un obiettivo e lascia che l'IA calcoli un piano di risparmio su misura.")
+    
+    obiettivo_input = st.text_input("Descrivi il tuo obiettivo:", placeholder="Es. Vorrei risparmiare 3000 euro per una vacanza in Giappone entro 10 mesi.")
+    
+    if st.button("Genera Piano d'Azione Obiettivo"):
+        if not obiettivo_input.strip():
+            st.warning("Inserisci prima il tuo obiettivo.")
+        else:
+            if not gemini_disponibile or not model:
+                st.error("⚠ Configurazione API non rilevata.")
+            else:
+                with st.spinner("Creazione piano di risparmio personalizzato..."):
+                    prompt_obj = f"""
+                    Agisci come un consulente finanziario personale. L'utente ha il seguente obiettivo di risparmio: '{obiettivo_input}'.
+                    Fornisci un piano dettagliato strutturato in questo modo:
+                    - 🎯 **Obiettivo analizzato**
+                    - 💰 **Risparmio mensile necessario**
+                    - ✂️ **Aree di taglio spese consigliate per centrare il target**
+                    - 📅 **Tabella di marcia passo-passo**
+                    """
+                    try:
+                        res_obj = model.generate_content(prompt_obj)
+                        if res_obj and res_obj.text:
+                            st.markdown("### 📋 Il tuo Piano di Risparmio:")
+                            st.markdown(res_obj.text)
+                            st.session_state.conteggio_usi += 1
+                    except Exception as e:
+                        st.error(f"Errore: {e}")
 
 with tab5:
     st.subheader("📊 Statistiche di Utilizzo dell'App")
@@ -249,9 +264,9 @@ with tab5:
     st.subheader("⭐ Lascia un Commento e una Valutazione")
     st.write("Fai sapere agli altri cosa pensi dell'applicazione!")
     
-    nome_utente = st.text_input("Il tuo nome:", placeholder="Es. Anna Rossi")
+    nome_utente = st.text_input("Il tuo nome:", placeholder="Es. Anna Rossi", key="nome_rec")
     stelle_utente = st.selectbox("Valutazione in stelle:", ["⭐⭐⭐⭐⭐ (Eccellente)", "⭐⭐⭐⭐ (Molto buono)", "⭐⭐⭐ (Buono)", "⭐⭐ (Sufficiente)", "⭐ (Scarso)"])
-    testo_recensione = st.text_area("Il tuo commento:", placeholder="Scrivi qui la tua recensione...")
+    testo_recensione = st.text_area("Il tuo commento:", placeholder="Scrivi qui la tua recensione...", key="testo_rec")
     
     if st.button("Invia Commento"):
         if nome_utente.strip() and testo_recensione.strip():
