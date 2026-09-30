@@ -1,5 +1,7 @@
 import streamlit as st
 import google.generativeai as genai
+import tempfile
+import os
 
 # Configurazione della pagina
 st.set_page_config(
@@ -17,7 +19,7 @@ try:
     if api_key:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(
-            model_name='gemini-3.8-flash',
+            model_name='gemini-1.5-flash',
             generation_config={"temperature": 0.3, "max_output_tokens": 1500}
         )
         gemini_disponibile = True
@@ -59,7 +61,7 @@ st.sidebar.info("Tocca i **tre puntini ⠇** in alto a destra e seleziona **'Agg
 st.sidebar.markdown("---")
 st.sidebar.info("ℹ️ **App 100% Gratuita**: Nessun abbonamento richiesto.")
 
-# Stato della sessione per contatori e recensioni
+# Stato della sessione
 if "visite" not in st.session_state:
     st.session_state.visite = 1
 if "conteggio_usi" not in st.session_state:
@@ -74,7 +76,7 @@ if "recensioni" not in st.session_state:
         ("Giulia V.", "⭐⭐⭐⭐⭐", "Molto utile per risparmiare.")
     ]
 
-# 5 Tab ordinate esattamente come richiesto
+# 5 Tab ordinate
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📥 Inserimento txt", 
     "📁 Importa / Esporta file", 
@@ -96,7 +98,7 @@ with tab1:
             with st.spinner("💎 Generazione analisi finanziaria in corso..."):
                 prompt = f"""
                 Agisci come un direttore finanziario personale. Analizza la lista di spese e/o entrate fornita dall'utente.
-                Usa questa struttura esatta con las icone:
+                Usa questa struttura esatta con le icone:
 
                 📊 **Riepilogo del Budget**
                 - Entrate totali: [valore]
@@ -154,22 +156,71 @@ with tab1:
 
 with tab2:
     st.subheader("📁 Importa / Esporta File dal Telefono")
-    st.info("💡 **Consiglio**: Quando tocchi 'Browse files', se compare il menu con la fotocamera, cerca l'opzione **'File'**, **'Archivio'** o **'Download'** per scegliere i documenti dalla memoria del telefono.")
+    st.info("💡 Carica un documento (PDF, Immagine di scontrino, CSV, TXT) e premi il pulsante sotto.")
     
-    # Specificare i formati principali forza Android/iOS a mostrare l'esplora risorse/file manager
-    uploaded_file = st.file_uploader("Seleziona un documento (PDF, TXT, CSV, XLSX, Immagini)", type=["pdf", "txt", "csv", "xlsx", "png", "jpg", "jpeg"])
+    uploaded_file = st.file_uploader("Carica file dal dispositivo", type=["pdf", "png", "jpg", "jpeg", "txt", "csv", "xlsx"])
     
-    if uploaded_file:
-        st.success(f"File caricato con successo: **{uploaded_file.name}**")
-        if st.button("Analizza Contenuto File"):
-            st.session_state.analisi_fatta = True
-            st.session_state.testo_risultato = f"📊 **Riepilogo File ({uploaded_file.name})**\n- Documento elaborato con successo.\n- Dati finanziari estratti e pronti per l'ottimizzazione."
-            st.session_state.conteggio_usi += 1
-            st.success("File elaborato correttamente!")
-            st.rerun()
-            
+    if uploaded_file is not None:
+        st.success(f"File caricato: **{uploaded_file.name}**")
+        
+        if st.button("🚀 Avvia Analisi File"):
+            if not gemini_disponibile or not model:
+                st.error("⚠ Configurazione API non rilevata.")
+            else:
+                with st.spinner("Elaborazione file con Gemini in corso..."):
+                    uploaded_file_gemini = None
+                    try:
+                        # Salvataggio temporaneo per consentire a Gemini di leggerlo correttamente tramite File API
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[1]) as tmp_file:
+                            tmp_file.write(uploaded_file.getvalue())
+                            tmp_path = tmp_file.name
+
+                        # Caricamento del file nei server temporanei di Gemini
+                        uploaded_file_gemini = genai.upload_file(tmp_path)
+                        
+                        prompt_file = [
+                            uploaded_file_gemini,
+                            """Agisci come un direttore finanziario personale. Analizza i dati, il testo o le immagini contenute in questo file allegato.
+                            Usa questa struttura esatta con le icone:
+
+                            📊 **Riepilogo del Budget**
+                            - Entrate totali: [valore]
+                            - Spese totali: [valore]
+                            - Rimante (Risparmio): [valore]
+
+                            🔍 **Analisi della situazione**
+                            [Testo di analisi basato sul documento]
+
+                            💪 **Punti di forza:**
+                            - [Punti]
+
+                            ⚠ **Punti critici:**
+                            - [Punti]
+
+                            💡 **Proposta di ottimizzazione**
+                            - [Consigli]"""
+                        ]
+                        
+                        response = model.generate_content(prompt_file)
+                        if response and response.text:
+                            st.session_state.analisi_fatta = True
+                            st.session_state.testo_risultato = response.text
+                            st.session_state.conteggio_usi += 1
+                            st.success("Analisi del file completata con successo!")
+                            st.rerun()
+                    except Exception as e:
+                        st.error(f"Errore durante l'analisi del file: {e}")
+                    finally:
+                        # Pulizia del file temporaneo locale se esistente
+                        if 'tmp_path' in locals() and os.path.exists(tmp_path):
+                            os.remove(tmp_path)
+
+    if st.session_state.analisi_fatta and st.session_state.testo_risultato:
+        st.markdown("---")
+        st.markdown(st.session_state.testo_risultato)
+
     st.markdown("---")
-    st.write("Puoi anche esportare i dati delle tue analisi salvate:")
+    st.write("Esporta i dati delle tue analisi:")
     if st.button("Esporta dati in formato Testo"):
         st.download_button("Scarica report", data=st.session_state.testo_risultato if st.session_state.testo_risultato else "Nessuna analisi disponibile", file_name="report_spese.txt")
 
