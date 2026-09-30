@@ -21,7 +21,7 @@ try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(
             model_name='gemini-3.8-flash',
-            generation_config={"temperature": 0.3, "max_output_tokens": 1500}
+            generation_config={"temperature": 0.3, "max_output_tokens": 2000}
         )
         gemini_disponibile = True
 except Exception:
@@ -86,61 +86,84 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "⭐ Commenti & Statistiche"
 ])
 
-# Funzione di utilità per l'analisi finanziaria con IA (gestisce sia testo che immagini)
-def esegui_analisi_ia(contenuto_input, titolo_sorgente="Dati utente", is_image=False, image_obj=None):
+# Funzione centrale avanzata per l'analisi finanziaria approfondita
+def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", is_image=False, image_obj=None, is_obiettivo=False):
     if not gemini_disponibile or not model:
         st.error("⚠ Configurazione API non rilevata. Controlla la chiave nei Secrets.")
         return
     
-    with st.spinner("💎 Analisi finanziaria in corso (elaborazione IA)..."):
-        prompt = f"""
-        Agisci come un direttore finanziario personale. Analizza i dati finanziari, le spese, le entrate, i documenti o l'immagine forniti.
-        Sorgente dati: {titolo_sorgente}
+    with st.spinner("💎 Elaborazione analisi finanziaria avanzata in corso..."):
         
-        Usa questa struttura esatta con le icone:
+        if is_obiettivo:
+            prompt = f"""
+            Agisci come un consulente finanziario e wealth manager di altissimo livello. L'utente ha inserito il seguente obiettivo di risparmio/finanziario: '{contenuto_input}'.
+            Fornisci un'analisi e un piano strategico rigoroso strutturato esattamente con queste sezioni e icone:
 
-        📊 **Riepilogo del Budget**
-        - Entrate totali: [valore stimato o reale]
-        - Spese totali: [valore stimato o reale]
-        - Rimante (Risparmio): [valore stimato o reale]
+            🎯 **Analisi Strategica dell'Obiettivo**
+            [Analisi di fattibilità, sostenibilità temporale e realismo del target]
 
-        🔍 **Analisi della situazione**
-        [Testo di analisi approfondito basato sui dati o sull'immagine]
+            💰 **Proiezione Finanziaria e Target Mensile**
+            - Sforzo di risparmio mensile richiesto: [valore stimato]
+            - Orizzonte temporale: [valore]
 
-        💪 **Punti di forza:**
-        - [Punti]
+            💪 **Punti di Forza dell'Idea**
+            - [Elenca almeno 2-3 punti di forza strategici]
 
-        ⚠ **Punti critici:**
-        - [Punti]
+            ⚠ **Rischi e Ostacoli Critici**
+            - [Elenca i principali rischi che potrebbero far fallire l'obiettivo, es. inflazione, imprevisti]
 
-        💡 **Proposta di ottimizzazione**
-        - [Consigli pratici]
-        """
+            💡 **Consigli Avanzati e Piano d'Azione**
+            - [Strategie pratiche passo-passo per centrare il target in anticipo]
+            """
+        else:
+            prompt = f"""
+            Agisci come un direttore finanziario personale spietato ma estremamente competente. Analizza in profondità i dati finanziari, le spese, le entrate, i documenti o l'immagine forniti.
+            Sorgente dati: {titolo_sorgente}
+            
+            Fornisci un'analisi dettagliata ed esaustiva utilizzando rigorosamente questa struttura con le relative icone:
+
+            📊 **Riepilogo del Budget**
+            - Entrate totali: [valore calcolato o stimato]
+            - Spese totali: [valore calcolato o stimato]
+            - Margine di Risparmio (Rimante): [valore e percentuale sulle entrate]
+
+            🔍 **Analisi Approfondita della Situazione**
+            [Analisi critica e dettagliata dei flussi di cassa, scompattando le voci di spesa principali]
+
+            💪 **Punti di Forza**
+            - [Elenca i comportamenti finanziari virtuosi o le basi solide individuate]
+
+            ⚠ **Punti Critici & Sprechi Nascosti**
+            - [Elenca le criticità, gli squilibri nel budget, le spese superflue o i rischi a breve/lungo termine]
+
+            💡 **Consigli Avanzati di Ottimizzazione**
+            - [Fornisci strategie avanzate e pratiche per tagliare i costi, riallocare il capitale e aumentare i risparmi]
+            """
         
         try:
             if is_image and image_obj is not None:
                 response = model.generate_content([prompt, image_obj])
             else:
-                full_prompt = prompt + f"\n\nDati forniti:\n{contenuto_input}"
+                full_prompt = prompt + f"\n\nDati / Testo fornito:\n{contenuto_input}"
                 response = model.generate_content(full_prompt)
                 
             if response and response.text:
                 st.session_state.analisi_fatta = True
                 st.session_state.testo_risultato = response.text
                 st.session_state.conteggio_usi += 1
-                st.success("Analisi completata con successo!")
+                st.success("Analisi avanzata completata con successo!")
         except Exception as e:
             st.error(f"Errore durante l'analisi IA: {e}")
 
 with tab1:
     st.subheader("Incolla qui la lista delle spese:")
-    user_text_input = st.text_area("Spese:", placeholder="Es. 2000 stipendio, 500 affitto...", label_visibility="collapsed", key="txt_input")
+    user_text_input = st.text_area("Spese:", placeholder="Es. 2000 stipendio, 500 affitto, 300 ristoranti...", label_visibility="collapsed", key="txt_input")
     
-    if st.button("Analizza Spese"):
+    if st.button("Analizza Spese in Profondità"):
         if not user_text_input.strip():
-            st.warning("Inserisci prima la lista delle spese.")
+            st.warning("Inserisci prima la lista delle spese o dei movimenti.")
         else:
-            esegui_analisi_ia(user_text_input, "Lista testuale")
+            esegui_analisi_ia_profonda(user_text_input, "Lista testuale")
 
     if st.session_state.analisi_fatta and st.session_state.testo_risultato:
         st.markdown("---")
@@ -155,7 +178,7 @@ with tab1:
             if st.button("Fai una domanda al consulente"):
                 if user_question.strip() and model:
                     with st.spinner("Elaborazione risposta..."):
-                        f_resp = model.generate_content(f"Basandoti sull'analisi precedente, rispondi a: {user_question}")
+                        f_resp = model.generate_content(f"Basandoti sull'analisi finanziaria precedente, rispondi in modo professionale ed esauriente alla domanda dell'utente: {user_question}")
                         if f_resp and f_resp.text:
                             st.markdown("### 💬 Risposta del Consulente:")
                             st.markdown(f_resp.text)
@@ -182,13 +205,13 @@ with tab2:
         else:
             st.success(f"File caricato: **{uploaded_file.name}**")
         
-        if st.button("🚀 Avvia Analisi File / Foto"):
+        if st.button("🚀 Avvia Analisi Avanzata File / Foto"):
             try:
                 bytes_data = uploaded_file.getvalue()
                 
                 if is_img_file:
                     image_obj = Image.open(io.BytesIO(bytes_data))
-                    esegui_analisi_ia("", f"Foto scontrino/documento: {uploaded_file.name}", is_image=True, image_obj=image_obj)
+                    esegui_analisi_ia_profonda("", f"Foto scontrino/documento: {uploaded_file.name}", is_image=True, image_obj=image_obj)
                     st.rerun()
                     
                 elif file_name_lower.endswith('.pdf'):
@@ -202,12 +225,12 @@ with tab2:
                     testo_estratto = "\n".join(extracted_pages)
                     if not testo_estratto.strip():
                         testo_estratto = "Il PDF sembra scansionato o privo di testo vettoriale."
-                    esegui_analisi_ia(testo_estratto[:15000], f"Documento PDF: {uploaded_file.name}")
+                    esegui_analisi_ia_profonda(testo_estratto[:15000], f"Documento PDF: {uploaded_file.name}")
                     st.rerun()
                     
                 else:
                     testo_estratto = bytes_data.decode("utf-8", errors="ignore")
-                    esegui_analisi_ia(testo_estratto[:15000], f"Documento: {uploaded_file.name}")
+                    esegui_analisi_ia_profonda(testo_estratto[:15000], f"Documento: {uploaded_file.name}")
                     st.rerun()
                     
             except Exception as e:
@@ -226,11 +249,11 @@ with tab3:
     st.info("Incolla trascrizioni di note vocali o il testo di SMS/notifiche di spesa della tua banca.")
     sms_voce_input = st.text_area("Testo SMS o trascrizione vocale:", placeholder="Es. 'Hai speso 45.50 EUR presso Supermercato con carta finita in 1234' oppure trascrizione vocale...", key="sms_input")
     
-    if st.button("Analizza SMS / Voce"):
+    if st.button("Analizza SMS / Voce in Profondità"):
         if not sms_voce_input.strip():
             st.warning("Inserisci prima il testo da analizzare.")
         else:
-            esegui_analisi_ia(sms_voce_input, "SMS / Nota Vocale")
+            esegui_analisi_ia_profonda(sms_voce_input, "SMS / Nota Vocale")
 
     if st.session_state.analisi_fatta and st.session_state.testo_risultato:
         st.markdown("---")
@@ -238,34 +261,19 @@ with tab3:
 
 with tab4:
     st.subheader("🎯 I tuoi Obiettivi Personali di Risparmio")
-    st.info("Imposta un obiettivo e lascia che l'IA calcoli un piano di risparmio su misura.")
+    st.info("Imposta un obiettivo e lascia che l'IA calcoli un piano strategico avanzato su misura.")
     
     obiettivo_input = st.text_input("Descrivi il tuo obiettivo:", placeholder="Es. Vorrei risparmiare 3000 euro per una vacanza in Giappone entro 10 mesi.")
     
-    if st.button("Genera Piano d'Azione Obiettivo"):
+    if st.button("Genera Piano Strategico Obiettivo"):
         if not obiettivo_input.strip():
             st.warning("Inserisci prima il tuo obiettivo.")
         else:
-            if not gemini_disponibile or not model:
-                st.error("⚠ Configurazione API non rilevata.")
-            else:
-                with st.spinner("Creazione piano di risparmio personalizzato..."):
-                    prompt_obj = f"""
-                    Agisci come un consulente finanziario personale. L'utente ha il seguente obiettivo di risparmio: '{obiettivo_input}'.
-                    Fornisci un piano dettagliato strutturato in questo modo:
-                    - 🎯 **Obiettivo analizzato**
-                    - 💰 **Risparmio mensile necessario**
-                    - ✂️ **Aree di taglio spese consigliate per centrare il target**
-                    - 📅 **Tabella di marcia passo-passo**
-                    """
-                    try:
-                        res_obj = model.generate_content(prompt_obj)
-                        if res_obj and res_obj.text:
-                            st.markdown("### 📋 Il tuo Piano di Risparmio:")
-                            st.markdown(res_obj.text)
-                            st.session_state.conteggio_usi += 1
-                    except Exception as e:
-                        st.error(f"Errore: {e}")
+            esegui_analisi_ia_profonda(obiettivo_input, "Obiettivo di Risparmio", is_obiettivo=True)
+
+    if st.session_state.analisi_fatta and st.session_state.testo_risultato:
+        st.markdown("---")
+        st.markdown(st.session_state.testo_risultato)
 
 with tab5:
     st.subheader("📊 Statistiche di Utilizzo dell'App")
