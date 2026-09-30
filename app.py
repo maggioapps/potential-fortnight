@@ -1,7 +1,8 @@
 import streamlit as st
 import google.generativeai as genai
-import tempfile
-import os
+import pypdf
+import pandas as pd
+import io
 
 # Configurazione della pagina
 st.set_page_config(
@@ -155,51 +156,66 @@ with tab1:
                 st.rerun()
 
 with tab2:
-    st.subheader("📁 Importa / Esporta File dal Telefono")
-    st.info("💡 Carica un documento (PDF, Immagine di scontrino, CSV, TXT) e premi il pulsante sotto.")
+    st.subheader("📁 Importa File dal Telefono (PDF, Excel, TXT)")
+    st.info("💡 Carica il tuo estratto conto o documento dai Download del telefono e premi il pulsante.")
     
-    uploaded_file = st.file_uploader("Carica file dal dispositivo", type=["pdf", "png", "jpg", "jpeg", "txt", "csv", "xlsx"])
+    uploaded_file = st.file_uploader("Carica file", type=["pdf", "txt", "csv", "xlsx", "xls"])
     
     if uploaded_file is not None:
         st.success(f"File caricato: **{uploaded_file.name}**")
         
         if st.button("🚀 Avvia Analisi File"):
             if not gemini_disponibile or not model:
-                st.error("⚠ Configurazione API non rilevata.")
+                st.error("⚠ Configurazione API non rilevata nei Secrets.")
             else:
-                with st.spinner("Elaborazione file con Gemini in corso..."):
-                    uploaded_file_gemini = None
+                with st.spinner("Estrazione testo e analisi in corso..."):
+                    testo_estratto = ""
                     try:
-                        # Salvataggio temporaneo per consentire a Gemini di leggerlo correttamente tramite File API
-                        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[1]) as tmp_file:
-                            tmp_file.write(uploaded_file.getvalue())
-                            tmp_path = tmp_file.name
+                        # Estrazione in base al tipo di file
+                        if uploaded_file.name.endswith('.pdf'):
+                            reader = pypdf.PdfReader(uploaded_file)
+                            for page in reader.pages:
+                                t = page.extract_text()
+                                if t:
+                                    testo_estratto += t + "\n"
+                        elif uploaded_file.name.endswith(('.xlsx', '.xls')):
+                            df = pd.read_excel(uploaded_file)
+                            testo_estratto = df.to_string()
+                        elif uploaded_file.name.endswith('.csv'):
+                            df = pd.read_csv(uploaded_file)
+                            testo_estratto = df.to_string()
+                        else:
+                            testo_estratto = str(uploaded_file.read().decode("utf-8", errors="ignore"))
 
-                        # Caricamento del file nei server temporanei di Gemini
-                        uploaded_file_gemini = genai.upload_file(tmp_path)
+                        if not testo_estratto.strip():
+                            testo_estratto = f"File caricato: {uploaded_file.name} (nessun testo testuale leggibile direttamente)"
+
+                        prompt_file = f"""
+                        Agisci come un direttore finanziario personale. Analizza i dati finanziari o le transazioni estratte da questo documento/file.
+                        Nome file: {uploaded_file.name}
                         
-                        prompt_file = [
-                            uploaded_file_gemini,
-                            """Agisci come un direttore finanziario personale. Analizza i dati, il testo o le immagini contenute in questo file allegato.
-                            Usa questa struttura esatta con le icone:
+                        Usa questa struttura esatta con le icone:
 
-                            📊 **Riepilogo del Budget**
-                            - Entrate totali: [valore]
-                            - Spese totali: [valore]
-                            - Rimante (Risparmio): [valore]
+                        📊 **Riepilogo del Budget**
+                        - Entrate totali: [valore]
+                        - Spese totali: [valore]
+                        - Rimante (Risparmio): [valore]
 
-                            🔍 **Analisi della situazione**
-                            [Testo di analisi basato sul documento]
+                        🔍 **Analisi della situazione**
+                        [Testo di analisi dettagliato basato sul documento]
 
-                            💪 **Punti di forza:**
-                            - [Punti]
+                        💪 **Punti di forza:**
+                        - [Punti]
 
-                            ⚠ **Punti critici:**
-                            - [Punti]
+                        ⚠ **Punti critici:**
+                        - [Punti]
 
-                            💡 **Proposta di ottimizzazione**
-                            - [Consigli]"""
-                        ]
+                        💡 **Proposta di ottimizzazione**
+                        - [Consigli]
+                        
+                        Contenuto del documento:
+                        {testo_estratto[:10000]}
+                        """
                         
                         response = model.generate_content(prompt_file)
                         if response and response.text:
@@ -209,11 +225,7 @@ with tab2:
                             st.success("Analisi del file completata con successo!")
                             st.rerun()
                     except Exception as e:
-                        st.error(f"Errore durante l'analisi del file: {e}")
-                    finally:
-                        # Pulizia del file temporaneo locale se esistente
-                        if 'tmp_path' in locals() and os.path.exists(tmp_path):
-                            os.remove(tmp_path)
+                        st.error(f"Errore durante l'elaborazione del file: {e}")
 
     if st.session_state.analisi_fatta and st.session_state.testo_risultato:
         st.markdown("---")
