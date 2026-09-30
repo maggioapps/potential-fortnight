@@ -1,4 +1,3 @@
-
 import streamlit as st
 import google.generativeai as genai
 import io
@@ -20,7 +19,6 @@ try:
     api_key = st.secrets.get("GEMINI_API_KEY", "")
     if api_key:
         genai.configure(api_key=api_key)
-        # Sfrutta la massima capacità di generazione dei server
         model = genai.GenerativeModel(
             model_name='gemini-3.8-flash',
             generation_config={"temperature": 0.4, "max_output_tokens": None}
@@ -52,7 +50,18 @@ st.markdown("""
 st.title("Split & Save AI 💡")
 st.write("Il tuo direttore finanziario personale e gratuito.")
 
-# --- SIDEBAR: INSTALLAZIONE E INFO ---
+# --- SIDEBAR: LINGUE, INSTALLAZIONE E INFO ---
+st.sidebar.markdown("### 🌍 Selezione Lingua")
+lista_lingue = [
+    "Rilevamento Automatico (Auto)",
+    "Italiano", "English", "Español", "Français", "Deutsch", 
+    "Português", "Română", "العربية", "中文", "हिन्दी", 
+    "日本語", "Русский", "Polski", "Nederlands", "Ελληνικά", 
+    "Türkçe", "Українська", "Magyar", "Čeština", "Svenska", "한국어"
+]
+lingua_selezionata = st.sidebar.selectbox("Scegli la lingua:", lista_lingue)
+
+st.sidebar.markdown("---")
 st.sidebar.markdown("### ⭐ Recensioni degli utenti")
 st.sidebar.markdown("⭐⭐⭐⭐⭐ **4.9 / 5.0**")
 st.sidebar.info("✨ *'Questa app mi ha svoltato la gestione del budget!'* — Marco R.")
@@ -60,9 +69,6 @@ st.sidebar.info("✨ *'Questa app mi ha svoltato la gestione del budget!'* — M
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📱 Installa sul Telefono")
 st.sidebar.info("Tocca i **tre puntini ⠇** in alto a destra e seleziona **'Aggiungi a schermata Home'**.")
-
-st.sidebar.markdown("---")
-st.sidebar.info("ℹ️ **App 100% Gratuita**: Nessun abbonamento richiesto.")
 
 # Stato della sessione
 if "visite" not in st.session_state:
@@ -88,18 +94,26 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "⭐ Commenti & Statistiche"
 ])
 
-# Funzione centrale con massima potenza server per analisi approfondite complete
+# Funzione centrale con gestione lingua e massima potenza server
 def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", is_image=False, image_obj=None, is_obiettivo=False):
     if not gemini_disponibile or not model:
         st.error("⚠ Configurazione API non rilevata. Controlla la chiave nei Secrets.")
         return
     
-    with st.spinner("💎 Elaborazione analisi finanziaria approfondita e completa in corso..."):
+    with st.spinner("💎 Elaborazione analisi finanziaria approfondita in corso..."):
         
+        # Gestione istruzione lingua per Gemini
+        istruzione_lingua = ""
+        if lingua_selezionata == "Rilevamento Automatico (Auto)":
+            istruzione_lingua = "Rileva automaticamente la lingua utilizzata dall'utente e rispondi esattamente nella stessa lingua."
+        else:
+            istruzione_lingua = f"Genera l'intera risposta e l'analisi rigorosamente in lingua: {lingua_selezionata}."
+
         if is_obiettivo:
             prompt = f"""
+            {istruzione_lingua}
             Agisci come un consulente finanziario e wealth manager di altissimo livello. L'utente ha inserito il seguente obiettivo: '{contenuto_input}'.
-            Fornisci un'analisi strategica esauziva e dettagliata, senza tagliare alcuna sezione, strutturata rigorosamente così:
+            Fornisci un'analisi strategica esaustiva e dettagliata, senza tagliare alcuna sezione, strutturata rigorosamente così:
 
             🎯 **Analisi Strategica dell'Obiettivo**
             [Analisi approfondita di fattibilità, sostenibilità temporale e realismo]
@@ -119,6 +133,7 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
             """
         else:
             prompt = f"""
+            {istruzione_lingua}
             Agisci come un direttore finanziario personale spietato, rigoroso ed estremamente competente. Analizza in modo esaustivo i dati finanziari, i flussi di cassa, i documenti o l'immagine forniti.
             Sorgente dati: {titolo_sorgente}
             
@@ -180,7 +195,7 @@ with tab1:
             if st.button("Fai una domanda al consulente"):
                 if user_question.strip() and model:
                     with st.spinner("Elaborazione risposta..."):
-                        f_resp = model.generate_content(f"Basandoti sull'analisi finanziaria precedente, rispondi in modo professionale ed esauriente alla domanda dell'utente: {user_question}")
+                        f_resp = model.generate_content(f"Rispondi nella lingua selezionata ({lingua_selezionata}). Basandoti sull'analisi finanziaria precedente, rispondi alla domanda dell'utente: {user_question}")
                         if f_resp and f_resp.text:
                             st.markdown("### 💬 Risposta del Consulente:")
                             st.markdown(f_resp.text)
