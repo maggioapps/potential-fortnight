@@ -205,6 +205,7 @@ with tab2:
         else:
             st.success(f"File caricato: **{uploaded_file.name}**")
         
+        # Pulsante posizionato correttamente all'esterno dei blocchi interni di lettura ma dentro il controllo file
         if st.button("🚀 Avvia Analisi Avanzata File / Foto"):
             try:
                 bytes_data = uploaded_file.getvalue()
