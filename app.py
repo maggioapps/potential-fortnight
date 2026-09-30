@@ -2,6 +2,7 @@ import streamlit as st
 import google.generativeai as genai
 import io
 import pypdf
+from PIL import Image
 
 # Configurazione della pagina
 st.set_page_config(
@@ -10,7 +11,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# Configurazione Gemini
+# Configurazione Gemini con il modello richiesto
 gemini_disponibile = False
 model = None
 
@@ -19,7 +20,7 @@ try:
     if api_key:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(
-            model_name='gemini-2.5-flash',
+            model_name='gemini-3.8-flash',
             generation_config={"temperature": 0.3, "max_output_tokens": 1500}
         )
         gemini_disponibile = True
@@ -79,21 +80,21 @@ if "recensioni" not in st.session_state:
 # 5 Tab ordinate e complete
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📥 Inserimento txt", 
-    "📁 Importa / Esporta file", 
+    "📁 Importa File & Foto", 
     "🎤 Voce & SMS", 
     "🎯 Obiettivi", 
     "⭐ Commenti & Statistiche"
 ])
 
-# Funzione di utilità per l'analisi finanziaria con IA
-def esegui_analisi_ia(testo_input, titolo_sorgente="Testo utente"):
+# Funzione di utilità per l'analisi finanziaria con IA (gestisce sia testo che immagini)
+def esegui_analisi_ia(contenuto_input, titolo_sorgente="Dati utente", is_image=False, image_obj=None):
     if not gemini_disponibile or not model:
         st.error("⚠ Configurazione API non rilevata. Controlla la chiave nei Secrets.")
         return
     
-    with st.spinner("💎 Generazione analisi finanziaria in corso..."):
+    with st.spinner("💎 Analisi finanziaria in corso (elaborazione IA)..."):
         prompt = f"""
-        Agisci come un direttore finanziario personale. Analizza i dati finanziari, le spese, le entrate o i movimenti forniti.
+        Agisci come un direttore finanziario personale. Analizza i dati finanziari, le spese, le entrate, i documenti o l'immagine forniti.
         Sorgente dati: {titolo_sorgente}
         
         Usa questa struttura esatta con le icone:
@@ -104,7 +105,7 @@ def esegui_analisi_ia(testo_input, titolo_sorgente="Testo utente"):
         - Rimante (Risparmio): [valore stimato o reale]
 
         🔍 **Analisi della situazione**
-        [Testo di analisi approfondito]
+        [Testo di analisi approfondito basato sui dati o sull'immagine]
 
         💪 **Punti di forza:**
         - [Punti]
@@ -114,19 +115,22 @@ def esegui_analisi_ia(testo_input, titolo_sorgente="Testo utente"):
 
         💡 **Proposta di ottimizzazione**
         - [Consigli pratici]
-        
-        Dati forniti:
-        {testo_input}
         """
+        
         try:
-            response = model.generate_content(prompt)
+            if is_image and image_obj is not None:
+                response = model.generate_content([prompt, image_obj])
+            else:
+                full_prompt = prompt + f"\n\nDati forniti:\n{contenuto_input}"
+                response = model.generate_content(full_prompt)
+                
             if response and response.text:
                 st.session_state.analisi_fatta = True
                 st.session_state.testo_risultato = response.text
                 st.session_state.conteggio_usi += 1
                 st.success("Analisi completata con successo!")
         except Exception as e:
-            st.error(f"Errore durante l'analisi: {e}")
+            st.error(f"Errore durante l'analisi IA: {e}")
 
 with tab1:
     st.subheader("Incolla qui la lista delle spese:")
@@ -163,21 +167,31 @@ with tab1:
                 st.rerun()
 
 with tab2:
-    st.subheader("📁 Importa File dal Telefono (PDF, TXT, CSV)")
-    st.info("💡 Carica il tuo estratto conto PDF, file TXT o CSV dai Download del telefono.")
+    st.subheader("📁 Importa File & 📷 Foto (PDF, TXT, CSV, JPG, PNG)")
+    st.info("💡 Carica un documento PDF/CSV o scatta/carica la **foto di uno scontrino o di un estratto conto**.")
     
-    uploaded_file = st.file_uploader("Carica file", type=["pdf", "txt", "csv"])
+    uploaded_file = st.file_uploader("Carica file o foto", type=["pdf", "txt", "csv", "jpg", "jpeg", "png"])
     
     if uploaded_file is not None:
-        st.success(f"File caricato: **{uploaded_file.name}**")
+        file_name_lower = uploaded_file.name.lower()
+        is_img_file = file_name_lower.endswith(('.jpg', '.jpeg', '.png'))
         
-        if st.button("🚀 Avvia Analisi File"):
-            testo_estratto = ""
+        if is_img_file:
+            image = Image.open(uploaded_file)
+            st.image(image, caption=f"Foto caricata: {uploaded_file.name}", use_container_width=True)
+        else:
+            st.success(f"File caricato: **{uploaded_file.name}**")
+        
+        if st.button("🚀 Avvia Analisi File / Foto"):
             try:
                 bytes_data = uploaded_file.getvalue()
                 
-                # Gestione specifica ed estrazione avanzata per i file PDF
-                if uploaded_file.name.lower().endswith('.pdf'):
+                if is_img_file:
+                    image_obj = Image.open(io.BytesIO(bytes_data))
+                    esegui_analisi_ia("", f"Foto scontrino/documento: {uploaded_file.name}", is_image=True, image_obj=image_obj)
+                    st.rerun()
+                    
+                elif file_name_lower.endswith('.pdf'):
                     pdf_file_obj = io.BytesIO(bytes_data)
                     reader = pypdf.PdfReader(pdf_file_obj)
                     extracted_pages = []
@@ -187,16 +201,17 @@ with tab2:
                             extracted_pages.append(text)
                     testo_estratto = "\n".join(extracted_pages)
                     if not testo_estratto.strip():
-                        testo_estratto = "Il PDF sembra scansionato o privo di testo vettoriale selezionabile."
+                        testo_estratto = "Il PDF sembra scansionato o privo di testo vettoriale."
+                    esegui_analisi_ia(testo_estratto[:15000], f"Documento PDF: {uploaded_file.name}")
+                    st.rerun()
+                    
                 else:
-                    # Gestione per TXT o CSV
                     testo_estratto = bytes_data.decode("utf-8", errors="ignore")
-
-                # Avvia l'analisi IA con il testo estratto dal documento
-                esegui_analisi_ia(testo_estratto[:15000], f"Documento: {uploaded_file.name}")
-                st.rerun()
+                    esegui_analisi_ia(testo_estratto[:15000], f"Documento: {uploaded_file.name}")
+                    st.rerun()
+                    
             except Exception as e:
-                st.error(f"Errore durante l'elaborazione del file: {e}")
+                st.error(f"Errore durante l'elaborazione del file/foto: {e}")
 
     if st.session_state.analisi_fatta and st.session_state.testo_risultato:
         st.markdown("---")
