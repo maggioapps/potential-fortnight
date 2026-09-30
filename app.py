@@ -10,12 +10,11 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- 🤖 CONFIGURAZIONE GEMINI (Nascosta / Gestita a parte) ---
+# --- 🤖 CONFIGURAZIONE GEMINI ---
 gemini_disponibile = False
 model = None
 
 try:
-    # Prende la chiave in automatico dai Secrets di Streamlit (gestita a parte da te)
     api_key = st.secrets.get("GEMINI_API_KEY", "")
     if api_key:
         genai.configure(api_key=api_key)
@@ -92,6 +91,11 @@ with tab1:
     st.subheader("Incolla qui la lista delle spese:")
     user_text_input = st.text_area("Spese:", placeholder="Es. 2000 stipendio, 500 affitto...", label_visibility="collapsed")
     
+    # 💡 BARRA AGGIUNTIVA PER DOMANDE O DUBBI SPECIFICI
+    st.markdown("---")
+    st.subheader("❓ Domande o Dubbi sull'analisi")
+    user_question = st.text_input("Hai dubbi specifici o vuoi chiedere qualcosa al consulente?", placeholder="Es. Come posso tagliare sulle bollette?")
+
     if st.button("Analizza Spese"):
         if not user_text_input.strip():
             st.warning("Inserisci prima la lista delle spese.")
@@ -100,9 +104,12 @@ with tab1:
                 st.error("⚠️ Configurazione API non rilevata. Verifica i Secrets su Streamlit Cloud.")
             else:
                 with st.spinner("💎 Generazione analisi finanziaria approfondita in corso..."):
+                    # Integrazione della domanda dell'utente nel prompt se presente
+                    nota_utente = f"\nL'utente ha aggiunto questa domanda/dubbio specifico: {user_question}" if user_question else ""
+                    
                     prompt = f"""
                     Agisci come un direttore finanziario personale di altissimo livello. Analizza la lista di spese e/o entrate fornita dall'utente.
-                    Fornisci una risposta approfondita, professionale e formattata esattamente con questa struttura e con le icone indicate:
+                    Fornisci una risposta approfondita, professionale e formattata esattamente con questa struttura e con le icone indicate (evita assolutamente errori di formattazione o residui di asterischi):
 
                     📊 **Riepilogo del Budget**
                     - Entrate totali: [calcola o stima in base al testo]
@@ -124,6 +131,7 @@ with tab1:
                     - 👈 **Nuove uscite:** [Totale ottimizzato]
                     - 👈 **Nuovo risparmio mensile:** [Nuovo importo e percentuale]
                     [Concludi con una frase motivazionale].
+                    {nota_utente}
 
                     Testo inserito dall'utente:
                     {user_text_input}
