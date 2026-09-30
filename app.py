@@ -44,21 +44,10 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- CONTATORE VISITE IN ALTO ---
-if "visite" not in st.session_state:
-    st.session_state.visite = 1
-
-# Mostriamo il contatore in alto con un look pulito
-col_top1, col_top2, col_top3 = st.columns([1, 2, 1])
-with col_top2:
-    st.metric(label="👥 Persone che hanno visitato l'app", value=st.session_state.visite)
-
-st.markdown("---")
-
 st.title("Split & Save AI 💡")
 st.write("Il tuo direttore finanziario personale e gratuito.")
 
-# --- SIDEBAR: INSTALLAZIONE E RECENSIONI ---
+# --- SIDEBAR: INSTALLAZIONE E INFO ---
 st.sidebar.markdown("### ⭐ Recensioni degli utenti")
 st.sidebar.markdown("⭐⭐⭐⭐⭐ **4.9 / 5.0**")
 st.sidebar.info("✨ *'Questa app mi ha svoltato la gestione del budget!'* — Marco R.")
@@ -70,7 +59,11 @@ st.sidebar.info("Tocca i **tre puntini ⠇** in alto a destra e seleziona **'Agg
 st.sidebar.markdown("---")
 st.sidebar.info("ℹ️ **App 100% Gratuita**: Nessun abbonamento richiesto.")
 
-# Stato della sessione
+# Stato della sessione per contatori e recensioni
+if "visite" not in st.session_state:
+    st.session_state.visite = 1
+if "conteggio_usi" not in st.session_state:
+    st.session_state.conteggio_usi = 0
 if "analisi_fatta" not in st.session_state:
     st.session_state.analisi_fatta = False
 if "testo_risultato" not in st.session_state:
@@ -81,7 +74,8 @@ if "recensioni" not in st.session_state:
         ("Giulia V.", "⭐⭐⭐⭐⭐", "Molto utile per risparmiare.")
     ]
 
-tab1, tab2, tab3, tab4 = st.tabs(["📥 Inserimento", "🎯 Obiettivi", "🎤 Voce & SMS", "⭐ Lascia una Recensione"])
+# Tab principali (con la tab delle recensioni e statistiche affiancate)
+tab1, tab2, tab3, tab4 = st.tabs(["📥 Inserimento", "🎯 Obiettivi", "🎤 Voce & SMS", "⭐ Commenti & Statistiche"])
 
 with tab1:
     st.subheader("Incolla qui la lista delle spese:")
@@ -122,6 +116,8 @@ with tab1:
                     if response and response.text:
                         st.session_state.analisi_fatta = True
                         st.session_state.testo_risultato = response.text
+                        # Incrementa il contatore delle volte che l'app è stata utilizzata
+                        st.session_state.conteggio_usi += 1
                         st.success("Analisi completata!")
                 except Exception as e:
                     st.error(f"Errore: {e}")
@@ -161,22 +157,31 @@ with tab3:
     st.text_area("Copia qui il testo di SMS o notifiche bancarie:")
 
 with tab4:
-    st.subheader("⭐ Valuta l'applicazione")
-    st.write("Lascia le tue stelle e una recensione per aiutare a far crescere il progetto!")
+    # Mostriamo i contatori in alto nella tab dedicata
+    st.subheader("📊 Statistiche di Utilizzo dell'App")
+    col_stat1, col_stat2 = st.columns(2)
+    with col_stat1:
+        st.metric(label="👥 Persone passate", value=st.session_state.visite)
+    with col_stat2:
+        st.metric(label="🚀 Analisi effettuate", value=st.session_state.conteggio_usi)
+
+    st.markdown("---")
+    st.subheader("⭐ Lascia un Commento e una Valutazione")
+    st.write("Fai sapere agli altri cosa pensi dell'applicazione!")
     
     nome_utente = st.text_input("Il tuo nome:", placeholder="Es. Anna Rossi")
     stelle_utente = st.selectbox("Valutazione in stelle:", ["⭐⭐⭐⭐⭐ (Eccellente)", "⭐⭐⭐⭐ (Molto buono)", "⭐⭐⭐ (Buono)", "⭐⭐ (Sufficiente)", "⭐ (Scarso)"])
-    testo_recensione = st.text_area("La tua recensione:", placeholder="Scrivi qui cosa ti piace dell'app...")
+    testo_recensione = st.text_area("Il tuo commento:", placeholder="Scrivi qui la tua recensione...")
     
-    if st.button("Invia Recensione"):
+    if st.button("Invia Commento"):
         if nome_utente.strip() and testo_recensione.strip():
             st.session_state.recensioni.insert(0, (nome_utente, stelle_utente.split(" ")[0], testo_recensione))
-            st.success("🎉 Grazie mille per la tua recensione!")
+            st.success("🎉 Grazie mille per il tuo commento!")
         else:
-            st.warning("Inserisci il tuo nome e il testo della recensione prima di inviare.")
+            st.warning("Inserisci il tuo nome e il commento prima di inviare.")
             
     st.markdown("---")
-    st.subheader("📋 Recensioni della Community")
+    st.subheader("📋 Commenti della Community")
     for utente, stelle, commento in st.session_state.recensioni:
         st.markdown(f"**{utente}** - {stelle}\n\n*{commento}*")
         st.markdown("---")
