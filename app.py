@@ -1,7 +1,5 @@
 import streamlit as st
 import google.generativeai as genai
-import pypdf
-import pandas as pd
 import io
 
 # Configurazione della pagina
@@ -156,10 +154,10 @@ with tab1:
                 st.rerun()
 
 with tab2:
-    st.subheader("📁 Importa File dal Telefono (PDF, Excel, TXT)")
-    st.info("💡 Carica il tuo estratto conto o documento dai Download del telefono e premi il pulsante.")
+    st.subheader("📁 Importa File dal Telefono (PDF, TXT, CSV)")
+    st.info("💡 Carica il tuo file o estratto conto dai Download del telefono e premi il pulsante.")
     
-    uploaded_file = st.file_uploader("Carica file", type=["pdf", "txt", "csv", "xlsx", "xls"])
+    uploaded_file = st.file_uploader("Carica file", type=["pdf", "txt", "csv"])
     
     if uploaded_file is not None:
         st.success(f"File caricato: **{uploaded_file.name}**")
@@ -168,30 +166,23 @@ with tab2:
             if not gemini_disponibile or not model:
                 st.error("⚠ Configurazione API non rilevata nei Secrets.")
             else:
-                with st.spinner("Estrazione testo e analisi in corso..."):
+                with st.spinner("Estrazione contenuto e analisi in corso..."):
                     testo_estratto = ""
                     try:
-                        # Estrazione in base al tipo di file
-                        if uploaded_file.name.endswith('.pdf'):
-                            reader = pypdf.PdfReader(uploaded_file)
-                            for page in reader.pages:
-                                t = page.extract_text()
-                                if t:
-                                    testo_estratto += t + "\n"
-                        elif uploaded_file.name.endswith(('.xlsx', '.xls')):
-                            df = pd.read_excel(uploaded_file)
-                            testo_estratto = df.to_string()
-                        elif uploaded_file.name.endswith('.csv'):
-                            df = pd.read_csv(uploaded_file)
-                            testo_estratto = df.to_string()
-                        else:
-                            testo_estratto = str(uploaded_file.read().decode("utf-8", errors="ignore"))
+                        bytes_data = uploaded_file.getvalue()
+                        # Tentativo di lettura come testo semplice o CSV
+                        try:
+                            testo_estratto = bytes_data.decode("utf-8", errors="ignore")
+                        except:
+                            testo_estratto = f"File binario o PDF caricato: {uploaded_file.name}"
 
-                        if not testo_estratto.strip():
-                            testo_estratto = f"File caricato: {uploaded_file.name} (nessun testo testuale leggibile direttamente)"
+                        # Se è un PDF, cerchiamo di estrarre sequenze di caratteri leggibili base
+                        if uploaded_file.name.endswith('.pdf'):
+                            # Pulizia e ricerca stringhe leggibili nel PDF senza moduli esterni
+                            testo_estratto = "".join([chr(b) if 32 <= b <= 126 or b in (10, 13) else " " for b in bytes_data])
 
                         prompt_file = f"""
-                        Agisci come un direttore finanziario personale. Analizza i dati finanziari o le transazioni estratte da questo documento/file.
+                        Agisci come un direttore finanziario personale. Analizza i dati finanziari, le spese o le transazioni contenute in questo documento caricato.
                         Nome file: {uploaded_file.name}
                         
                         Usa questa struttura esatta con le icone:
@@ -213,7 +204,7 @@ with tab2:
                         💡 **Proposta di ottimizzazione**
                         - [Consigli]
                         
-                        Contenuto del documento:
+                        Contenuto estratto dal documento:
                         {testo_estratto[:10000]}
                         """
                         
