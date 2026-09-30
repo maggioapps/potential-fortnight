@@ -1,3 +1,4 @@
+
 import streamlit as st
 import google.generativeai as genai
 import io
@@ -11,7 +12,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# Configurazione Gemini con il modello richiesto
+# Configurazione Gemini con potenza di calcolo massima
 gemini_disponibile = False
 model = None
 
@@ -19,9 +20,10 @@ try:
     api_key = st.secrets.get("GEMINI_API_KEY", "")
     if api_key:
         genai.configure(api_key=api_key)
+        # Sfrutta la massima capacità di generazione dei server
         model = genai.GenerativeModel(
             model_name='gemini-3.8-flash',
-            generation_config={"temperature": 0.3, "max_output_tokens": 2000}
+            generation_config={"temperature": 0.4, "max_output_tokens": None}
         )
         gemini_disponibile = True
 except Exception:
@@ -86,58 +88,58 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "⭐ Commenti & Statistiche"
 ])
 
-# Funzione centrale avanzata per l'analisi finanziaria approfondita
+# Funzione centrale con massima potenza server per analisi approfondite complete
 def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", is_image=False, image_obj=None, is_obiettivo=False):
     if not gemini_disponibile or not model:
         st.error("⚠ Configurazione API non rilevata. Controlla la chiave nei Secrets.")
         return
     
-    with st.spinner("💎 Elaborazione analisi finanziaria avanzata in corso..."):
+    with st.spinner("💎 Elaborazione analisi finanziaria approfondita e completa in corso..."):
         
         if is_obiettivo:
             prompt = f"""
-            Agisci come un consulente finanziario e wealth manager di altissimo livello. L'utente ha inserito il seguente obiettivo di risparmio/finanziario: '{contenuto_input}'.
-            Fornisci un'analisi e un piano strategico rigoroso strutturato esattamente con queste sezioni e icone:
+            Agisci come un consulente finanziario e wealth manager di altissimo livello. L'utente ha inserito il seguente obiettivo: '{contenuto_input}'.
+            Fornisci un'analisi strategica esauziva e dettagliata, senza tagliare alcuna sezione, strutturata rigorosamente così:
 
             🎯 **Analisi Strategica dell'Obiettivo**
-            [Analisi di fattibilità, sostenibilità temporale e realismo del target]
+            [Analisi approfondita di fattibilità, sostenibilità temporale e realismo]
 
             💰 **Proiezione Finanziaria e Target Mensile**
-            - Sforzo di risparmio mensile richiesto: [valore stimato]
-            - Orizzonte temporale: [valore]
+            - Sforzo di risparmio mensile richiesto: [valore stimato dettagliato]
+            - Orizzonte temporale e tappe intermedie: [valore]
 
             💪 **Punti di Forza dell'Idea**
-            - [Elenca almeno 2-3 punti di forza strategici]
+            - [Elenca e spiega dettagliatamente almeno 3 punti di forza strategici]
 
             ⚠ **Rischi e Ostacoli Critici**
-            - [Elenca i principali rischi che potrebbero far fallire l'obiettivo, es. inflazione, imprevisti]
+            - [Elenca e argomenta i principali rischi, es. inflazione, imprevisti, perdita di motivazione]
 
             💡 **Consigli Avanzati e Piano d'Azione**
-            - [Strategie pratiche passo-passo per centrare il target in anticipo]
+            - [Strategie pratiche passo-passo, investimenti a basso rischio consigliati per l'obiettivo e trucchi di risparmio mirati]
             """
         else:
             prompt = f"""
-            Agisci come un direttore finanziario personale spietato ma estremamente competente. Analizza in profondità i dati finanziari, le spese, le entrate, i documenti o l'immagine forniti.
+            Agisci come un direttore finanziario personale spietato, rigoroso ed estremamente competente. Analizza in modo esaustivo i dati finanziari, i flussi di cassa, i documenti o l'immagine forniti.
             Sorgente dati: {titolo_sorgente}
             
-            Fornisci un'analisi dettagliata ed esaustiva utilizzando rigorosamente questa struttura con le relative icone:
+            Fornisci un report completo, dettagliato e senza omissioni, usando rigorosamente questa struttura con le relative icone:
 
             📊 **Riepilogo del Budget**
             - Entrate totali: [valore calcolato o stimato]
             - Spese totali: [valore calcolato o stimato]
-            - Margine di Risparmio (Rimante): [valore e percentuale sulle entrate]
+            - Margine di Risparmio (Rimante): [valore e percentuale esatta sulle entrate]
 
             🔍 **Analisi Approfondita della Situazione**
-            [Analisi critica e dettagliata dei flussi di cassa, scompattando le voci di spesa principali]
+            [Analisi critica dettagliata dei flussi di cassa, scompattando tutte le voci di spesa principali e individuando squilibri strutturali]
 
             💪 **Punti di Forza**
-            - [Elenca i comportamenti finanziari virtuosi o le basi solide individuate]
+            - [Elenca in modo dettagliato i comportamenti finanziari virtuosi o le basi solide individuate]
 
             ⚠ **Punti Critici & Sprechi Nascosti**
-            - [Elenca le criticità, gli squilibri nel budget, le spese superflue o i rischi a breve/lungo termine]
+            - [Elenca analiticamente le criticità, gli squilibri nel budget, le spese superflue o i rischi a breve/lungo termine nascosti]
 
             💡 **Consigli Avanzati di Ottimizzazione**
-            - [Fornisci strategie avanzate e pratiche per tagliare i costi, riallocare il capitale e aumentare i risparmi]
+            - [Fornisci strategie avanzate, misurabili e pratiche per tagliare i costi fissi/variabili, riallocare il capitale e massimizzare i risparmi]
             """
         
         try:
@@ -151,7 +153,7 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
                 st.session_state.analisi_fatta = True
                 st.session_state.testo_risultato = response.text
                 st.session_state.conteggio_usi += 1
-                st.success("Analisi avanzata completata con successo!")
+                st.success("Analisi avanzata completata al 100%!")
         except Exception as e:
             st.error(f"Errore durante l'analisi IA: {e}")
 
@@ -205,7 +207,6 @@ with tab2:
         else:
             st.success(f"File caricato: **{uploaded_file.name}**")
         
-        # Pulsante posizionato correttamente all'esterno dei blocchi interni di lettura ma dentro il controllo file
         if st.button("🚀 Avvia Analisi Avanzata File / Foto"):
             try:
                 bytes_data = uploaded_file.getvalue()
@@ -226,12 +227,12 @@ with tab2:
                     testo_estratto = "\n".join(extracted_pages)
                     if not testo_estratto.strip():
                         testo_estratto = "Il PDF sembra scansionato o privo di testo vettoriale."
-                    esegui_analisi_ia_profonda(testo_estratto[:15000], f"Documento PDF: {uploaded_file.name}")
+                    esegui_analisi_ia_profonda(testo_estratto[:30000], f"Documento PDF: {uploaded_file.name}")
                     st.rerun()
                     
                 else:
                     testo_estratto = bytes_data.decode("utf-8", errors="ignore")
-                    esegui_analisi_ia_profonda(testo_estratto[:15000], f"Documento: {uploaded_file.name}")
+                    esegui_analisi_ia_profonda(testo_estratto[:30000], f"Documento: {uploaded_file.name}")
                     st.rerun()
                     
             except Exception as e:
