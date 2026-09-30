@@ -155,14 +155,16 @@ with tab1:
 
 with tab2:
     st.subheader("📁 Importa / Esporta File")
-    uploaded_file = st.file_uploader("Carica lo scontrino, l'estratto conto o un documento (PNG, JPG, PDF)", type=["png", "jpg", "jpeg", "pdf"])
+    # type=None permette di caricare qualsiasi tipo di file (PDF, Excel, Word, TXT, CSV, ecc.)
+    uploaded_file = st.file_uploader("Carica qualsiasi file (PDF, Excel, Word, TXT, ecc.)", type=None)
+    
     if uploaded_file:
-        st.image(uploaded_file, caption="Documento caricato con successo", use_container_width=True)
-        if st.button("Analizza Documento"):
+        st.success(f"File caricato con successo: **{uploaded_file.name}**")
+        if st.button("Analizza Contenuto File"):
             st.session_state.analisi_fatta = True
-            st.session_state.testo_risultato = "📊 **Riepilogo Documento**\n- Documento elaborato con successo.\n- Voci di spesa estratte e ottimizzate."
+            st.session_state.testo_risultato = f"📊 **Riepilogo File ({uploaded_file.name})**\n- Documento elaborato con successo.\n- Dati finanziari estratti e pronti per l'ottimizzazione."
             st.session_state.conteggio_usi += 1
-            st.success("Documento elaborato correttamente!")
+            st.success("File elaborato correttamente!")
             st.rerun()
             
     st.markdown("---")
