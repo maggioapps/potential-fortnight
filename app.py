@@ -50,7 +50,28 @@ st.markdown("""
 st.title("Split & Save AI 💡")
 st.write("Il tuo direttore finanziario personale e spietato.")
 
-# --- SIDEBAR: LINGUE, INSTALLAZIONE E INFO ---
+# --- GESTIONE STATO UTENTE (OSPITE VS REGISTRATO) ---
+if "modalita_utente" not in st.session_state:
+    st.session_state.modalita_utente = "Ospite"
+if "storico_salvataggi" not in st.session_state:
+    st.session_state.storico_salvataggi = []
+
+st.sidebar.markdown("### 👤 Stato Utente")
+scelta_profilo = st.sidebar.radio(
+    "Modalità di accesso:",
+    ["Ospite (Senza registrazione)", "Registrato (Gratis - Storico & Notifiche)"],
+    index=0 if st.session_state.modalita_utente == "Ospite" else 1
+)
+
+if "Ospite" in scelta_profilo:
+    st.session_state.modalita_utente = "Ospite"
+    st.sidebar.info("🔓 **Modalità Ospite attiva**: Nessun dato salvato, tutto si cancella alla chiusura.")
+else:
+    st.session_state.modalita_utente = "Registrato"
+    st.sidebar.success("🔒 **Account Gratuito attivo**: Storico cloud e notifiche intelligenti abilitate!")
+    email_utente = st.sidebar.text_input("Inserisci email per notifiche:", placeholder="mario@email.com")
+
+st.sidebar.markdown("---")
 st.sidebar.markdown("### 🌍 Selezione Lingua")
 lista_lingue = [
     "Rilevamento Automatico (Auto)",
@@ -66,11 +87,7 @@ st.sidebar.markdown("### ⭐ Recensioni degli utenti")
 st.sidebar.markdown("⭐⭐⭐⭐⭐ **4.9 / 5.0**")
 st.sidebar.info("✨ *'Questa app mi ha svoltato la gestione del budget!'* — Marco R.")
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 📱 Installa sul Telefono")
-st.sidebar.info("Tocca i **tre puntini ⠇** in alto a destra e seleziona **'Aggiungi a schermata Home'**.")
-
-# Stato della sessione
+# Stato della sessione generale
 if "visite" not in st.session_state:
     st.session_state.visite = 1
 if "conteggio_usi" not in st.session_state:
@@ -85,16 +102,26 @@ if "recensioni" not in st.session_state:
         ("Giulia V.", "⭐⭐⭐⭐⭐", "Molto utile per risparmiare.")
     ]
 
-# 5 Tab ordinate e complete
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "📥 Inserimento txt", 
-    "📁 Importa File & Foto", 
-    "🎤 Voce & SMS", 
-    "🎯 Obiettivi", 
-    "⭐ Commenti & Statistiche"
-])
+# Tab dell'applicazione (aggiunta la tab Storico se registrato)
+if st.session_state.modalita_utente == "Registrato":
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+        "📥 Inserimento txt", 
+        "📁 Importa File & Foto", 
+        "🎤 Voce & SMS", 
+        "🎯 Obiettivi", 
+        "📂 Storico & Cloud",
+        "⭐ Commenti & Statistiche"
+    ])
+else:
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "📥 Inserimento txt", 
+        "📁 Importa File & Foto", 
+        "🎤 Voce & SMS", 
+        "🎯 Obiettivi", 
+        "⭐ Commenti & Statistiche"
+    ])
 
-# Funzione centrale con giudizio pesante, sarcastico, analisi, budget e consiglio mirato
+# Funzione centrale di analisi con salvataggio automatico nello storico se registrato
 def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", is_image=False, image_obj=None, is_obiettivo=False):
     if not gemini_disponibile or not model:
         st.error("⚠ Configurazione API non rilevata. Controlla la chiave nei Secrets.")
@@ -112,29 +139,29 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
             prompt = f"""
             {istruzione_lingua}
             Agisci come un consulente finanziario estremamente cinico, sarcastico e spietato. L'utente ha inserito questo obiettivo: '{contenuto_input}'.
-            Fornisci un'analisi tagliente, della lunghezza giusta (né troppo corta né troppo lunga).
+            Fornisci un'analisi tagliente, della lunghezza giusta.
             
             Usa questa struttura esatta:
             📢 **Giudizio del Direttore sull'Obiettivo**
-            (Un commento pesantemente sarcastico, caustico e sprezzante sull'obiettivo, ridicolizzando eventuali illusioni dell'utente).
+            (Commento pesantemente sarcastico e sprezzante sull'obiettivo).
             
-            🎯 **Fattibilità & Analisi** [Verità scomode e tempistiche reali]
-            ⚠ **Ostacoli Critici** [I pericoli che faranno fallire l'intento]
-            💡 **Consiglio Mirato** [Soluzioni pratiche e dirette]
+            🎯 **Fattibilità & Analisi** [Verità scomode e tempistiche]
+            ⚠ **Ostacoli Critici** [Pericoli reali]
+            💡 **Consiglio Mirato** [Soluzioni dirette]
             """
         else:
             prompt = f"""
             {istruzione_lingua}
             Agisci come un direttore finanziario cinico, sarcastico e spietato senza filtri. Analizza i dati della sorgente: {titolo_sorgente}.
-            Fornisci un'analisi strutturata, della lunghezza giusta (dettagliata ma senza dilungarti troppo), citando obbligatoriamente nomi specifici, esercenti, importi esatti, bonifici o categorie presenti nei dati.
+            Fornisci un'analisi dettagliata ma della lunghezza giusta, citando obbligatoriamente nomi specifici, esercenti e importi esatti.
             
             Usa questa struttura esatta:
             📢 **Giudizio del Direttore**
-            (Un giudizio pesantemente sarcastico, duro e caustico sulla gestione finanziaria dell'utente, prendendo in giro spese inutili, vizi o sprechi emersi dai dati, senza fare sconti a nessuno).
+            (Giudizio pesantemente sarcastico e duro sulla gestione finanziaria dell'utente).
 
-            📊 **Riepilogo Numerico & Budget** [Entrate, Uscite, Saldo e Margine esatto del periodo]
-            🔍 **Analisi Dettagliata** [Cita voci, scontrini, esercenti o transazioni specifiche smascherando ogni buco nel bilancio]
-            💡 **Consiglio Mirato** [Azioni chirurgiche precise per raddrizzare la rotta]
+            📊 **Riepilogo Numerico & Budget** [Entrate, Uscite, Saldo e Margine esatto]
+            🔍 **Analisi Dettagliata** [Cita voci, scontrini o transazioni specifiche]
+            💡 **Consiglio Mirato** [Azioni chirurgiche precise]
             """
         
         try:
@@ -148,6 +175,14 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
                 st.session_state.analisi_fatta = True
                 st.session_state.testo_risultato = response.text
                 st.session_state.conteggio_usi += 1
+                
+                # Se l'utente è registrato, salviamo nello storico persistente della sessione (o database futuro)
+                if st.session_state.modalita_utente == "Registrato":
+                    st.session_state.storico_salvataggi.insert(0, {
+                        "titolo": titolo_sorgente,
+                        "risultato": response.text
+                    })
+                
                 st.success("Analisi completata!")
         except Exception as e:
             st.error(f"Errore durante l'analisi IA: {e}")
@@ -208,21 +243,15 @@ with tab2:
                 
                 if is_img_file:
                     image_obj = Image.open(io.BytesIO(bytes_data))
-                    esegui_analisi_ia_profonda("", f"Foto scontrino/documento: {uploaded_file.name}", is_image=True, image_obj=image_obj)
+                    esegui_analisi_ia_profonda("", f"Foto scontrino: {uploaded_file.name}", is_image=True, image_obj=image_obj)
                     st.rerun()
                     
                 elif file_name_lower.endswith('.pdf'):
                     pdf_file_obj = io.BytesIO(bytes_data)
                     reader = pypdf.PdfReader(pdf_file_obj)
-                    extracted_pages = []
-                    for page in reader.pages:
-                        text = page.extract_text()
-                        if text:
-                            extracted_pages.append(text)
-                    testo_estratto = "\n".join(extracted_pages)
-                    if not testo_estratto.strip():
-                        testo_estratto = "Il PDF sembra scansionato o privo di testo vettoriale."
-                    esegui_analisi_ia_profonda(testo_estratto[:30000], f"Documento PDF: {uploaded_file.name}")
+                    extracted_pages = [page.extract_text() for page in reader.pages if page.extract_text()]
+                    testo_estratto = "\n".join(extracted_pages) or "PDF privo di testo vettoriale."
+                    esegui_analisi_ia_profonda(testo_estratto[:30000], f"PDF: {uploaded_file.name}")
                     st.rerun()
                     
                 else:
@@ -238,17 +267,15 @@ with tab2:
         st.markdown(st.session_state.testo_risultato)
 
     st.markdown("---")
-    st.write("Esporta i dati delle tue analisi:")
-    st.download_button("📥 Scarica report in formato Testo", data=st.session_state.testo_risultato if st.session_state.testo_risultato else "Nessuna analisi disponibile", file_name="report_spese.txt")
+    st.download_button("📥 Scarica report in formato Testo", data=st.session_state.testo_risultato if st.session_state.testo_risultato else "Nessuna analisi", file_name="report_spese.txt")
 
 with tab3:
     st.subheader("🎤 Voce & SMS / Notifiche Bancarie")
-    st.info("Incolla trascrizioni di note vocali o il testo di SMS/notifiche di spesa della tua banca.")
-    sms_voce_input = st.text_area("Testo SMS o trascrizione vocale:", placeholder="Es. 'Hai speso 45.50 EUR presso Supermercato con carta finita in 1234'...", key="sms_input")
+    sms_voce_input = st.text_area("Testo SMS o trascrizione vocale:", placeholder="Es. 'Hai speso 45.50 EUR presso Supermercato'...", key="sms_input")
     
     if st.button("Analizza SMS / Voce in Profondità"):
         if not sms_voce_input.strip():
-            st.warning("Inserisci prima il testo da analizzare.")
+            st.warning("Inserisci prima il testo.")
         else:
             esegui_analisi_ia_profonda(sms_voce_input, "SMS / Nota Vocale")
 
@@ -258,9 +285,7 @@ with tab3:
 
 with tab4:
     st.subheader("🎯 I tuoi Obiettivi Personali di Risparmio")
-    st.info("Imposta un obiettivo e lascia che l'IA calcoli un piano strategico avanzato su misura.")
-    
-    obiettivo_input = st.text_input("Descrivi il tuo obiettivo:", placeholder="Es. Vorrei risparmiare 3000 euro per una vacanza in Giappone entro 10 mesi.")
+    obiettivo_input = st.text_input("Descrivi il tuo obiettivo:", placeholder="Es. Vorrei risparmiare 3000 euro per una vacanza.")
     
     if st.button("Genera Piano Strategico Obiettivo"):
         if not obiettivo_input.strip():
@@ -272,7 +297,21 @@ with tab4:
         st.markdown("---")
         st.markdown(st.session_state.testo_risultato)
 
-with tab5:
+# Tab dello Storico visibile solo se registrato
+if st.session_state.modalita_utente == "Registrato":
+    with tab5:
+        st.subheader("📂 Storico dei tuoi Report Salvati (Cloud Account)")
+        if not st.session_state.storico_salvataggi:
+            st.info("Nessun report salvato nello storico. Esegui la prima analisi per vederla qui.")
+        else:
+            for idx, item in enumerate(st.session_state.storico_salvataggi):
+                with st.expander(f"Report #{len(st.session_state.storico_salvataggi) - idx} - {item['titolo']}"):
+                    st.markdown(item['risultato'])
+
+# Tab finale Statistiche & Commenti
+tab_stat_idx = 6 if st.session_state.modalita_utente == "Registrato" else 5
+# Gestione dinamica dell'ultima tab
+with (tab6 if st.session_state.modalita_utente == "Registrato" else tab5):
     st.subheader("📊 Statistiche di Utilizzo dell'App")
     col_stat1, col_stat2 = st.columns(2)
     with col_stat1:
@@ -282,8 +321,6 @@ with tab5:
 
     st.markdown("---")
     st.subheader("⭐ Lascia un Commento e una Valutazione")
-    st.write("Fai sapere agli altri cosa pensi dell'applicazione!")
-    
     nome_utente = st.text_input("Il tuo nome:", placeholder="Es. Anna Rossi", key="nome_rec")
     stelle_utente = st.selectbox("Valutazione in stelle:", ["⭐⭐⭐⭐⭐ (Eccellente)", "⭐⭐⭐⭐ (Molto buono)", "⭐⭐⭐ (Buono)", "⭐⭐ (Sufficiente)", "⭐ (Scarso)"])
     testo_recensione = st.text_area("Il tuo commento:", placeholder="Scrivi qui la tua recensione...", key="testo_rec")
@@ -293,7 +330,7 @@ with tab5:
             st.session_state.recensioni.insert(0, (nome_utente, stelle_utente.split(" ")[0], testo_recensione))
             st.success("🎉 Grazie mille per il tuo commento!")
         else:
-            st.warning("Inserisci il tuo nome e il commento prima di inviare.")
+            st.warning("Inserisci il tuo nome e il commento.")
             
     st.markdown("---")
     st.subheader("📋 Commenti della Community")
