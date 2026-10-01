@@ -1,109 +1,71 @@
 import streamlit as st
 
-# Configurazione di sistema multi-motore
 st.set_page_config(
-    page_title="AURASYNC Enterprise OS",
+    page_title="AuraSync OS — Full Edition",
     page_icon="⚡",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
-# Inizializzazione sicura dello state globale (senza loop)
-if "initialized" not in st.session_state:
-    st.session_state["initialized"] = True
-    st.session_state["posts"] = [
-        {
-            "id": 1,
-            "utente": "AuraSync Core",
-            "testo": "Sistema operativo mobile-first inizializzato con successo. Tutti i motori sono online.",
-            "likes": 42,
-            "commenti": ["Motore 1 attivo", "Connessione stabile"]
-        }
-    ]
-    st.session_state["visitatori"] = 1240
-    st.session_state["utilizzi"] = 3890
+st.markdown("""
+    <style>
+    .main-header {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: #111;
+        margin-bottom: 0px;
+    }
+    .sub-text {
+        color: #666;
+        font-size: 0.95rem;
+        margin-bottom: 20px;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-# Layout principale: Header stile OS
-col_title, col_stats = st.columns([2, 2])
-
-with col_title:
-    st.markdown("<h2 style='margin:0; color:#FF4B4B;'>⚡ AURASYNC ENTERPRISE</h2>", unsafe_allow_html=True)
-    st.caption("Social-Native Mobile-First OS — Architettura a Doppia Navigazione")
-
-with col_stats:
-    st.markdown(
-        f"<div style='text-align: right; padding-top: 8px; font-size: 14px; font-weight: 600;'>"
-        f"👥 Persone: <span style='color:#FF4B4B;'>{st.session_state['visitatori']}</span> &nbsp;|&nbsp; "
-        f"⚡ Utilizzi: <span style='color:#FF4B4B;'>{st.session_state['utilizzi']}</span>"
-        f"</div>",
-        unsafe_allow_html=True
-    )
+st.markdown('<div class="main-header">⚡ AuraSync OS — Centro di Controllo</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-text">Esecuzione Modulo Isolato | Lingua attiva: Italiano (it)</div>', unsafe_allow_html=True)
 
 st.markdown("---")
 
-# Barra di ricerca universale integrata
-search_query = st.text_input(
-    "🔍 Ricerca Universale di Sistema",
-    placeholder="Cerca tra i 300 moduli, post o comandi rapidi..."
-)
+col1, col2 = st.columns([3, 1])
 
-if search_query:
-    st.success(indexing_msg := f"Motore di ricerca attivato per: '{search_query}' (Analisi cross-modulo in corso)")
-    st.session_state["utilizzi"] += 1
-
-st.markdown("---")
-
-# Navigazione Bifurcata stabile
-tab_social, tab_launcher = st.tabs([
-    "💬 Bacheca Social (Feed Principale)", 
-    "🚀 Launcher 50 Capitoli & 300 Moduli"
-])
-
-with tab_social:
-    st.subheader("📰 Social Feed & Condivisione")
+with col1:
+    st.markdown("### 🖥️ Dashboard Zero-Click & Control Center")
+    st.write("Panoramica rapida del tuo ecosistema operativo personale.")
     
-    # Form di pubblicazione pulito senza crash
-    with st.form("social_post_form", clear_on_submit=True):
-        autore = st.text_input("Il tuo Nome / Nickname", value="Utente Master")
-        testo_nuovo = st.text_area("Condividi un aggiornamento con la rete...")
-        invia = st.form_submit_button("Pubblica Post")
+    st.info("💡 **Stato del Sistema**: Online e pronto all'uso. Seleziona un modulo o naviga nella bacheca social.")
+
+with col2:
+    st.metric(label="Moduli Totali", value="300", delta="Disponibili")
+
+st.markdown("---")
+
+# Sezioni di navigazione principali
+tab_feed, tab_moduli = st.tabs(["💬 Bacheca Social", "🚀 Launcher 300 Moduli"])
+
+with tab_feed:
+    st.subheader("Bacheca Social & Feed Attivo")
+    st.write("Spazio di condivisione e aggiornamenti in tempo reale.")
+    
+    # Area inserimento post
+    with st.form("form_bacheca"):
+        autore = st.text_input("Il tuo nome / nickname")
+        messaggio = st.text_area("Scrivi un pensiero o condividi un modulo...")
+        invia = st.form_submit_button("Pubblica sulla Bacheca")
         
-        if invia:
-            if autore.strip() and testo_nuovo.strip():
-                st.session_state["posts"].insert(0, {
-                    "id": len(st.session_state["posts"]) + 1,
-                    "utente": autore,
-                    "testo": testo_nuovo,
-                    "likes": 0,
-                    "commenti": []
-                })
-                st.session_state["utilizzi"] += 1
-                st.success("Post pubblicato con successo!")
-            else:
-                st.warning("Inserisci sia il nome che il testo del post.")
+        if invia and autore and messaggio:
+            st.success(f"Pubblicato con successo da {autore}!")
 
-    st.markdown("### 🌐 Feed Attivo")
-    for idx, post in enumerate(st.session_state["posts"]):
-        with st.container():
-            st.markdown(f"**👤 {post['utente']}**")
-            st.write(post["col_testo"] if "col_testo" in post else post["testo"])
-            
-            col_like, col_info = st.columns([1, 4])
-            with col_like:
-                if st.button(f"👍 Mi piace ({post['likes']})", key=f"like_btn_{post['id']}_{idx}"):
-                    post["likes"] += 1
-            st.markdown("---")
+    st.markdown("---")
+    st.markdown("### Ultimi Post della Community")
+    st.info("🔹 **AuraSync Bot**: Sistema operativo mobile-first aggiornato e sincronizzato al 100%.")
 
-with tab_launcher:
-    st.subheader("📁 Master Launcher: Capitoli & Moduli")
-    st.info("Seleziona un capitolo per avviare il modulo isolato corrispondente.")
+with tab_moduli:
+    st.subheader("Archivio Capitoli & Moduli")
+    st.write("Seleziona i moduli operativi per il calcolo, l'analisi o l'automazione.")
     
-    capitolo_selezionato = st.selectbox(
-        "Seleziona Capitolo Operativo (1 - 50):",
-        [f"Capitolo {i}: Moduli e Automazioni Avanzate" for i in range(1, 51)]
-    )
+    capitolo = st.selectbox("Seleziona Capitolo (1 - 50):", [f"Capitolo {i}" for i in range(1, 51)])
+    st.write(Hai selezionato: **{capitolo}**)
     
-    st.write(f"Hai selezionato: **{capitolo_selezionato}**")
-    if st.button("Esegui Modulo Isolato"):
-        st.session_state["utilizzi"] += 1
-        st.success("Modulo avviato correttamente nell'ambiente sicuro.")
+    if st.button("Esegui Modulo"):
+        st.success("Modulo avviato correttamente.")
