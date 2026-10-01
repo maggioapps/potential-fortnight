@@ -21,7 +21,7 @@ try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(
             model_name='gemini-3.8-flash',
-            generation_config={"temperature": 0.4, "max_output_tokens": None}
+            generation_config={"temperature": 0.4, "max_output_tokens": 800}
         )
         gemini_disponibile = True
 except Exception:
@@ -94,58 +94,50 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "⭐ Commenti & Statistiche"
 ])
 
-# Funzione centrale unificata con giudizio condizionale esteso a obiettivi e flussi
+# Funzione centrale con prompt corti, specifici e diretti al punto
 def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", is_image=False, image_obj=None, is_obiettivo=False):
     if not gemini_disponibile or not model:
         st.error("⚠ Configurazione API non rilevata. Controlla la chiave nei Secrets.")
         return
     
-    with st.spinner("💎 Elaborazione analisi finanziaria approfondita in corso..."):
+    with st.spinner("💎 Analisi finanziaria in corso..."):
         
         istruzione_lingua = ""
         if lingua_selezionata == "Rilevamento Automatico (Auto)":
-            istruzione_lingua = "Rileva automaticamente la lingua utilizzata dall'utente e rispondi esattamente nella stessa lingua."
+            istruzione_lingua = "Rileva automaticamente la lingua e rispondi nella stessa."
         else:
-            istruzione_lingua = f"Genera l'intera risposta e l'analisi rigorosamente in lingua: {lingua_selezionata}."
+            istruzione_lingua = f"Rispondi rigorosamente in lingua: {lingua_selezionata}."
 
         if is_obiettivo:
             prompt = f"""
             {istruzione_lingua}
-            Agisci come un consulente finanziario spietato e senza peli sulla lingua. L'utente ha inserito il seguente obiettivo di risparmio/finanziario: '{contenuto_input}'.
+            Agisci come un consulente finanziario spietato. L'utente ha inserito questo obiettivo: '{contenuto_input}'.
+            Sii BREVE (massimo la metà delle parole rispetto al solito) e ULTRA SPECIFICO, citando i dati inseriti.
             
-            Inizia obbligatoriamente inserendo questa sezione speciale di giudizio con l'icona:
+            Usa questa struttura compatta:
             📢 **Giudizio del Direttore sull'Obiettivo**
-            - REGOLE PER IL GIUDIZIO:
-              1) Se l'obiettivo è estremamente realistico, ambizioso ma sostenibile e virtuoso, fai i complimenti all'utente con un messaggio di lode.
-              2) Se l'obiettivo è mediocre, poco chiaro, o vagamente pigro (senza vera ambizione), fai un commento tagliente, un po' spinto e punzecchiatore sulla mediocrità dell'idea.
-              3) Se l'obiettivo è totalmente irrealistico, scriteriato o incoerente con le capacità finanziarie tipiche, scrivi un commento sprezzante, dispregiativo e un po' offensivo sulla scarsa lucidità dell'utente.
-
-            Fornisci poi il resto del piano strategico con questa struttura:
-            🎯 **Analisi Strategica dell'Obiettivo**
-            💰 **Proiezione Finanziaria e Target Mensile**
-            💪 **Punti di Forza dell'Idea**
-            ⚠ **Rischi e Ostacoli Critici**
-            💡 **Consigli Avanzati e Piano d'Azione**
+            (Congratulazioni se l'obiettivo è top; commento pungente se mediocre; giudizio offensivo e sprezzante se l'obiettivo è scriteriato o assurdo).
+            
+            🎯 **Fattibilità & Target** [Cifre esatte e tempistiche]
+            ⚠ **Ostacoli Critici** [Specifica i rischi reali]
+            💡 **Piano d'Azione** [Azioni pratiche immediate]
             """
         else:
             prompt = f"""
             {istruzione_lingua}
-            Agisci come un direttore finanziario personale spietato, rigoroso e senza peli sulla lingua. Analizza in modo esaustivo i dati finanziari forniti.
-            Sorgente dati: {titolo_sorgente}
+            Agisci come un direttore finanziario spietato e senza filtri. Analizza i dati della sorgente: {titolo_sorgente}.
+            Sii BREVE (dimezza la lunghezza standard), tagliente e ESTREMAMENTE SPECIFICO (cita nomi, esercenti, importi esatti e categorie presenti nei dati).
             
-            Inizia obbligatoriamente inserendo questa sezione speciale di giudizio con l'icona:
+            Usa questa struttura compatta:
             📢 **Giudizio del Direttore**
-            - REGOLE PER IL GIUDIZIO: 
-              1) Se il bilancio è POSITIVO (entrate superiori alle spese con margine reale e risparmio solido), scrivi un messaggio caloroso di congratulazioni e lode.
-              2) Se il bilancio è NÉ POSITIVO NÉ NEGATIVO (in pareggio esatto o mediocre, senza veri risparmi o con piccoli sprechi tollerati), fai un commento tagliente, un po' spinto e critico sulla mediocrità della gestione.
-              3) Se il bilancio è NEGATIVO (spese superiori alle entrate, debiti o sprechi evidenti e sconsiderati), scrivi un commento sprezzante, dispregiativo e un po' offensivo nei confronti dei pessimi comportamenti finanziari dell'utente.
+            - Regole obbligatorie per il giudizio:
+              1) Se il bilancio è POSITIVO (avanzo reale), fai i complimenti con lode calorosa.
+              2) Se è NÉ POSITIVO NÉ NEGATIVO (pareggio o mediocre), fai un commento tagliente e un po' spinto sulla mediocrità.
+              3) Se è NEGATIVO (passivo o sprechi), scrivi un commento sprezzante, duro e offensivo citando specificamente dove si buttano i soldi.
 
-            Fornisci poi il resto del report con questa struttura:
-            📊 **Riepilogo del Budget** (Entrate, Spese, Margine)
-            🔍 **Analisi Approfondita della Situazione**
-            💪 **Punti di Forza**
-            ⚠ **Punti Critici & Sprechi Nascosti**
-            💡 **Consigli Avanzati di Ottimizzazione**
+            📊 **Riepilogo Numerico** [Entrate, Spese, Margine esatto]
+            🔍 **Analisi Dettagliata** [Cita voci, scontrini o transazioni specifiche senza girarci intorno]
+            💡 **Tagli Immediati** [Azioni chirurgiche precise]
             """
         
         try:
@@ -159,7 +151,7 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
                 st.session_state.analisi_fatta = True
                 st.session_state.testo_risultato = response.text
                 st.session_state.conteggio_usi += 1
-                st.success("Analisi avanzata completata al 100%!")
+                st.success("Analisi completata!")
         except Exception as e:
             st.error(f"Errore durante l'analisi IA: {e}")
 
@@ -186,7 +178,7 @@ with tab1:
             if st.button("Fai una domanda al consulente"):
                 if user_question.strip() and model:
                     with st.spinner("Elaborazione risposta..."):
-                        f_resp = model.generate_content(f"Rispondi nella lingua selezionata ({lingua_selezionata}). Mantenendo il tono severo e tagliente, rispondi alla domanda dell'utente basandoti sull'analisi precedente: {user_question}")
+                        f_resp = model.generate_content(f"Rispondi in lingua {lingua_selezionata}, sii sintetico, tagliente e specifico basandoti sull'analisi precedente: {user_question}")
                         if f_resp and f_resp.text:
                             st.markdown("### 💬 Risposta del Consulente:")
                             st.markdown(f_resp.text)
@@ -255,7 +247,7 @@ with tab2:
 with tab3:
     st.subheader("🎤 Voce & SMS / Notifiche Bancarie")
     st.info("Incolla trascrizioni di note vocali o il testo di SMS/notifiche di spesa della tua banca.")
-    sms_voce_input = st.text_area("Testo SMS o trascrizione vocale:", placeholder="Es. 'Hai speso 45.50 EUR presso Supermercato con carta finita in 1234' oppure trascrizione vocale...", key="sms_input")
+    sms_voce_input = st.text_area("Testo SMS o trascrizione vocale:", placeholder="Es. 'Hai speso 45.50 EUR presso Supermercato con carta finita in 1234'...", key="sms_input")
     
     if st.button("Analizza SMS / Voce in Profondità"):
         if not sms_voce_input.strip():
