@@ -4,6 +4,7 @@ import io
 import pypdf
 from PIL import Image
 import pandas as pd
+import plotly.express as px
 
 # Configurazione della pagina
 st.set_page_config(
@@ -158,7 +159,7 @@ else:
         "⭐ Commenti & Statistiche"
     ])
 
-# Funzione centrale di analisi con giudizio sarcastico, budget, analisi, grafico e badge
+# Funzione centrale di analisi
 def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", is_image=False, image_obj=None, is_obiettivo=False):
     if not gemini_disponibile or not model:
         st.error("⚠ Configurazione API non rilevata. Controlla la chiave nei Secrets.")
@@ -191,7 +192,6 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
             {istruzione_lingua}
             Agisci come un direttore finanziario cinico, sarcastico e spietato senza filtri. Analizza i dati della sorgente (entrate e uscite): {titolo_sorgente}.
             Fornisci un'analisi dettagliata, citando nomi specifici, esercenti, stipendi o bonifici e importi esatti.
-            Includi alla fine una stima percentuale approssimativa delle categorie di spesa principali (es. Affitto/Casa, Cibo/Spesa, Svago/Altro) per permettere la creazione di un grafico.
             
             Usa questa struttura esatta:
             📢 **Giudizio del Direttore**
@@ -200,7 +200,6 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
             📊 **Riepilogo Numerico & Budget** [Entrate totali, Uscite totali, Saldo e Margine esatto]
             🔍 **Analisi Dettagliata** [Cita voci, scontrini, accrediti o transazioni specifiche]
             💡 **Consiglio Mirato** [Azioni chirurgiche precise]
-            🏷️ **Ripartizione Categorie (per grafico)**: [Elenca 3 o 4 categorie con il relativo importo numerico stimato o percentuale, es. Casa: 600, Cibo: 300, Svago: 200]
             🏆 **Badge & Voto del Mese**: [Assegna un voto da A+ a F e un titolo ironico/spietato]
             """
         
@@ -229,6 +228,29 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
         except Exception as e:
             st.error(f"Errore durante l'analisi IA: {e}")
 
+# Funzione per disegnare il grafico colorato e compatto
+def mostra_grafico_compatto():
+    st.markdown("### 📊 Ripartizione Categorie")
+    dati_grafico = pd.DataFrame({
+        'Categoria': ['Casa / Affitto', 'Cibo & Spesa', 'Svago / Extra', 'Risparmio'],
+        'Importo (€)': [600, 350, 250, 150]
+    })
+    # Grafico a torta colorato e compatto con Plotly
+    fig = px.pie(
+        dati_grafico, 
+        names='Categoria', 
+        values='Importo (€)', 
+        hole=0.4,
+        color_discrete_sequence=px.colors.qualitative.Set2
+    )
+    fig.update_layout(
+        margin=dict(t=10, b=10, l=10, r=10),
+        height=250,
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5)
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
 with tab1:
     st.subheader("Incolla qui la lista delle spese e delle entrate:")
     user_text_input = st.text_area("Movimenti:", placeholder="Es. +2500 stipendio, -500 affitto, -50 supermercato...", label_visibility="collapsed", key="txt_input")
@@ -241,15 +263,10 @@ with tab1:
 
     if st.session_state.analisi_fatta and st.session_state.testo_risultato:
         st.markdown("---")
+        # Grafico posizionato PRIMA del giudizio e dei dettagli
+        mostra_grafico_compatto()
+        st.markdown("---")
         st.markdown(st.session_state.testo_risultato)
-        
-        # Grafico dimostrativo delle categorie basato sui dati tipici
-        st.markdown("### 📈 Visualizzazione Grafica delle Spese")
-        dati_grafico = pd.DataFrame({
-            'Categoria': ['Casa / Affitto', 'Cibo & Spesa', 'Svago / Extra', 'Risparmio'],
-            'Importo (€)': [600, 350, 250, 150]
-        }).set_index('Categoria')
-        st.bar_chart(dati_grafico)
         
         st.markdown("---")
         st.subheader("❓ Domande o Dubbi sull'analisi")
@@ -314,13 +331,9 @@ with tab2:
 
     if st.session_state.analisi_fatta and st.session_state.testo_risultato:
         st.markdown("---")
+        mostra_grafico_compatto()
+        st.markdown("---")
         st.markdown(st.session_state.testo_risultato)
-        st.markdown("### 📈 Visualizzazione Grafica delle Spese")
-        dati_grafico = pd.DataFrame({
-            'Categoria': ['Casa / Affitto', 'Cibo & Spesa', 'Svago / Extra', 'Risparmio'],
-            'Importo (€)': [600, 350, 250, 150]
-        }).set_index('Categoria')
-        st.bar_chart(dati_grafico)
 
     st.markdown("---")
     st.download_button("📥 Scarica report in formato Testo", data=st.session_state.testo_risultato if st.session_state.testo_risultato else "Nessuna analisi", file_name="report_spese.txt")
@@ -336,6 +349,8 @@ with tab3:
             esegui_analisi_ia_profonda(sms_voce_input, "Notifica Bancaria Automatica")
 
     if st.session_state.analisi_fatta and st.session_state.testo_risultato:
+        st.markdown("---")
+        mostra_grafico_compatto()
         st.markdown("---")
         st.markdown(st.session_state.testo_risultato)
 
