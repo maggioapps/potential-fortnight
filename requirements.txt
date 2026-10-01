@@ -1,15 +1,30 @@
+# --- CORE FRAMEWORK & UI ---
 streamlit>=1.35.0
+
+# --- DATA SCIENCE, ANALYTICS & CALCOLATORI MATEMATICI ---
 pandas>=2.0.0
 numpy>=1.24.0
 sympy>=1.12
+
+# --- VISUALIZZAZIONE DATI & GRAFICI INTERATTIVI ---
 plotly>=5.18.0
 matplotlib>=3.7.0
 seaborn>=0.12.0
+
+# --- UTILITY WEB, API & SCRAPING ---
 requests>=2.31.0
 beautifulsoup4>=4.12.0
+
+# --- MULTIMEDIA & ELABORAZIONE IMMAGINI ---
 pillow>=10.0.0
+
+# --- ESPORTAZIONE DOCUMENTI (PDF, EXCEL, WORD) ---
 reportlab>=4.0.0
 openpyxl>=3.1.0
 python-docx>=1.1.0
+
+# --- DATABASE, STORAGE & GESTIONE DATI UTENTE ---
 SQLAlchemy>=2.0.0
+
+# --- UTILITY TEMPORALI & ORARI ---
 pytz>=2023.3
