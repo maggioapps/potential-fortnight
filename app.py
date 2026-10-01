@@ -11,7 +11,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# Configurazione Gemini con potenza di calcolo massima
+# Configurazione Gemini con un limite di token bilanciato per evitare tagli
 gemini_disponibile = False
 model = None
 
@@ -21,7 +21,7 @@ try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(
             model_name='gemini-3.8-flash',
-            generation_config={"temperature": 0.4, "max_output_tokens": 800}
+            generation_config={"temperature": 0.4, "max_output_tokens": 2048}
         )
         gemini_disponibile = True
 except Exception:
@@ -94,7 +94,7 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "⭐ Commenti & Statistiche"
 ])
 
-# Funzione centrale con prompt corti, specifici e diretti al punto
+# Funzione centrale con lunghezza bilanciata e ricca di dettagli specifici
 def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", is_image=False, image_obj=None, is_obiettivo=False):
     if not gemini_disponibile or not model:
         st.error("⚠ Configurazione API non rilevata. Controlla la chiave nei Secrets.")
@@ -111,24 +111,24 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
         if is_obiettivo:
             prompt = f"""
             {istruzione_lingua}
-            Agisci come un consulente finanziario spietato. L'utente ha inserito questo obiettivo: '{contenuto_input}'.
-            Sii BREVE (massimo la metà delle parole rispetto al solito) e ULTRA SPECIFICO, citando i dati inseriti.
+            Agisci come un consulente finanziario spietato e diretto. L'utente ha inserito questo obiettivo: '{contenuto_input}'.
+            Fornisci un'analisi completa ma concisa, citando cifre e dettagli specifici inseriti dall'utente.
             
-            Usa questa struttura compatta:
+            Usa questa struttura:
             📢 **Giudizio del Direttore sull'Obiettivo**
-            (Congratulazioni se l'obiettivo è top; commento pungente se mediocre; giudizio offensivo e sprezzante se l'obiettivo è scriteriato o assurdo).
+            (Congratulazioni se l'obiettivo è eccellente; commento pungente se mediocre; giudizio offensivo e tagliente se l'obiettivo è assurdo o scriteriato).
             
-            🎯 **Fattibilità & Target** [Cifre esatte e tempistiche]
-            ⚠ **Ostacoli Critici** [Specifica i rischi reali]
-            💡 **Piano d'Azione** [Azioni pratiche immediate]
+            🎯 **Analisi e Fattibilità** [Dettagli precisi e tempistiche]
+            ⚠ **Ostacoli e Rischi** [Criticità reali]
+            💡 **Piano d'Azione** [Passi concreti immediati]
             """
         else:
             prompt = f"""
             {istruzione_lingua}
             Agisci come un direttore finanziario spietato e senza filtri. Analizza i dati della sorgente: {titolo_sorgente}.
-            Sii BREVE (dimezza la lunghezza standard), tagliente e ESTREMAMENTE SPECIFICO (cita nomi, esercenti, importi esatti e categorie presenti nei dati).
+            Fornisci un'analisi strutturata, dettagliata ma della lunghezza giusta (senza dilungarti troppo ma senza troncare nulla), citando obbligatoriamente nomi specifici, esercenti, importi esatti, bonifici o categorie presenti nei dati.
             
-            Usa questa struttura compatta:
+            Usa questa struttura:
             📢 **Giudizio del Direttore**
             - Regole obbligatorie per il giudizio:
               1) Se il bilancio è POSITIVO (avanzo reale), fai i complimenti con lode calorosa.
@@ -178,7 +178,7 @@ with tab1:
             if st.button("Fai una domanda al consulente"):
                 if user_question.strip() and model:
                     with st.spinner("Elaborazione risposta..."):
-                        f_resp = model.generate_content(f"Rispondi in lingua {lingua_selezionata}, sii sintetico, tagliente e specifico basandoti sull'analisi precedente: {user_question}")
+                        f_resp = model.generate_content(f"Rispondi in lingua {lingua_selezionata}, sii sintetico ma dettagliato, tagliente e specifico basandoti sull'analisi precedente: {user_question}")
                         if f_resp and f_resp.text:
                             st.markdown("### 💬 Risposta del Consulente:")
                             st.markdown(f_resp.text)
