@@ -94,7 +94,7 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "⭐ Commenti & Statistiche"
 ])
 
-# Funzione centrale con gestione lingua e massima potenza server
+# Funzione centrale unificata con giudizio condizionale esteso a obiettivi e flussi
 def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", is_image=False, image_obj=None, is_obiettivo=False):
     if not gemini_disponibile or not model:
         st.error("⚠ Configurazione API non rilevata. Controlla la chiave nei Secrets.")
@@ -102,7 +102,6 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
     
     with st.spinner("💎 Elaborazione analisi finanziaria approfondita in corso..."):
         
-        # Gestione istruzione lingua per Gemini
         istruzione_lingua = ""
         if lingua_selezionata == "Rilevamento Automatico (Auto)":
             istruzione_lingua = "Rileva automaticamente la lingua utilizzata dall'utente e rispondi esattamente nella stessa lingua."
@@ -112,49 +111,41 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
         if is_obiettivo:
             prompt = f"""
             {istruzione_lingua}
-            Agisci come un consulente finanziario e wealth manager di altissimo livello. L'utente ha inserito il seguente obiettivo: '{contenuto_input}'.
-            Fornisci un'analisi strategica esaustiva e dettagliata, senza tagliare alcuna sezione, strutturata rigorosamente così:
+            Agisci come un consulente finanziario spietato e senza peli sulla lingua. L'utente ha inserito il seguente obiettivo di risparmio/finanziario: '{contenuto_input}'.
+            
+            Inizia obbligatoriamente inserendo questa sezione speciale di giudizio con l'icona:
+            📢 **Giudizio del Direttore sull'Obiettivo**
+            - REGOLE PER IL GIUDIZIO:
+              1) Se l'obiettivo è estremamente realistico, ambizioso ma sostenibile e virtuoso, fai i complimenti all'utente con un messaggio di lode.
+              2) Se l'obiettivo è mediocre, poco chiaro, o vagamente pigro (senza vera ambizione), fai un commento tagliente, un po' spinto e punzecchiatore sulla mediocrità dell'idea.
+              3) Se l'obiettivo è totalmente irrealistico, scriteriato o incoerente con le capacità finanziarie tipiche, scrivi un commento sprezzante, dispregiativo e un po' offensivo sulla scarsa lucidità dell'utente.
 
+            Fornisci poi il resto del piano strategico con questa struttura:
             🎯 **Analisi Strategica dell'Obiettivo**
-            [Analisi approfondita di fattibilità, sostenibilità temporale e realismo]
-
             💰 **Proiezione Finanziaria e Target Mensile**
-            - Sforzo di risparmio mensile richiesto: [valore stimato dettagliato]
-            - Orizzonte temporale e tappe intermedie: [valore]
-
             💪 **Punti di Forza dell'Idea**
-            - [Elenca e spiega dettagliatamente almeno 3 punti di forza strategici]
-
             ⚠ **Rischi e Ostacoli Critici**
-            - [Elenca e argomenta i principali rischi, es. inflazione, imprevisti, perdita di motivazione]
-
             💡 **Consigli Avanzati e Piano d'Azione**
-            - [Strategie pratiche passo-passo, investimenti a basso rischio consigliati per l'obiettivo e trucchi di risparmio mirati]
             """
         else:
             prompt = f"""
             {istruzione_lingua}
-            Agisci come un direttore finanziario personale spietato, rigoroso ed estremamente competente. Analizza in modo esaustivo i dati finanziari, i flussi di cassa, i documenti o l'immagine forniti.
+            Agisci come un direttore finanziario personale spietato, rigoroso e senza peli sulla lingua. Analizza in modo esaustivo i dati finanziari forniti.
             Sorgente dati: {titolo_sorgente}
             
-            Fornisci un report completo, dettagliato e senza omissioni, usando rigorosamente questa struttura con le relative icone:
+            Inizia obbligatoriamente inserendo questa sezione speciale di giudizio con l'icona:
+            📢 **Giudizio del Direttore**
+            - REGOLE PER IL GIUDIZIO: 
+              1) Se il bilancio è POSITIVO (entrate superiori alle spese con margine reale e risparmio solido), scrivi un messaggio caloroso di congratulazioni e lode.
+              2) Se il bilancio è NÉ POSITIVO NÉ NEGATIVO (in pareggio esatto o mediocre, senza veri risparmi o con piccoli sprechi tollerati), fai un commento tagliente, un po' spinto e critico sulla mediocrità della gestione.
+              3) Se il bilancio è NEGATIVO (spese superiori alle entrate, debiti o sprechi evidenti e sconsiderati), scrivi un commento sprezzante, dispregiativo e un po' offensivo nei confronti dei pessimi comportamenti finanziari dell'utente.
 
-            📊 **Riepilogo del Budget**
-            - Entrate totali: [valore calcolato o stimato]
-            - Spese totali: [valore calcolato o stimato]
-            - Margine di Risparmio (Rimante): [valore e percentuale esatta sulle entrate]
-
+            Fornisci poi il resto del report con questa struttura:
+            📊 **Riepilogo del Budget** (Entrate, Spese, Margine)
             🔍 **Analisi Approfondita della Situazione**
-            [Analisi critica dettagliata dei flussi di cassa, scompattando tutte le voci di spesa principali e individuando squilibri strutturali]
-
             💪 **Punti di Forza**
-            - [Elenca in modo dettagliato i comportamenti finanziari virtuosi o le basi solide individuate]
-
             ⚠ **Punti Critici & Sprechi Nascosti**
-            - [Elenca analiticamente le criticità, gli squilibri nel budget, le spese superflue o i rischi a breve/lungo termine nascosti]
-
             💡 **Consigli Avanzati di Ottimizzazione**
-            - [Fornisci strategie avanzate, misurabili e pratiche per tagliare i costi fissi/variabili, riallocare il capitale e massimizzare i risparmi]
             """
         
         try:
@@ -195,7 +186,7 @@ with tab1:
             if st.button("Fai una domanda al consulente"):
                 if user_question.strip() and model:
                     with st.spinner("Elaborazione risposta..."):
-                        f_resp = model.generate_content(f"Rispondi nella lingua selezionata ({lingua_selezionata}). Basandoti sull'analisi finanziaria precedente, rispondi alla domanda dell'utente: {user_question}")
+                        f_resp = model.generate_content(f"Rispondi nella lingua selezionata ({lingua_selezionata}). Mantenendo il tono severo e tagliente, rispondi alla domanda dell'utente basandoti sull'analisi precedente: {user_question}")
                         if f_resp and f_resp.text:
                             st.markdown("### 💬 Risposta del Consulente:")
                             st.markdown(f_resp.text)
