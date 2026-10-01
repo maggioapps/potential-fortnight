@@ -1,19 +1,20 @@
 import streamlit as st
 
 st.set_page_config(
-    page_title="AURASYNC OS — Ultimate Edition",
+    page_title="AURASYNC OS",
     page_icon="⚡",
     layout="wide"
 )
 
+# Inizializzazione sicura dello stato
 if "posts" not in st.session_state:
     st.session_state["posts"] = [
         {
             "id": 1,
             "utente": "AuraSync Community",
-            "testo": "Benvenuti nella bacheca ufficiale di AURASYNC! Feed principale attivo.",
+            "testo": "Benvenuti nella bacheca ufficiale di AURASYNC!",
             "likes": 15,
-            "commenti": ["Ottimo lavoro!"],
+            "commenti": [],
             "condivisibile": True
         }
     ]
@@ -23,10 +24,11 @@ if "visitatori" not in st.session_state:
 if "utilizzi" not in st.session_state:
     st.session_state["utilizzi"] = 120
 
+# Intestazione
 col_logo, col_counter = st.columns([3, 1])
 
 with col_logo:
-    st.markdown("<h1 style='margin: 0; padding: 0;'>AURASYNC</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>AURASYNC</h1>", unsafe_allow_html=True)
 
 with col_counter:
     st.markdown(
@@ -38,17 +40,7 @@ with col_counter:
 
 st.markdown("---")
 
-query_universale = st.text_input(
-    "🔍 Ricerca Universale (Cerca tra i 300 moduli o fai una domanda):",
-    placeholder="Es. Media ponderata, Sblocco lavandino..."
-)
-
-if query_universale:
-    st.info(f"Risultati rapidi per: **{query_universale}**")
-    st.session_state["utilizzi"] += 1
-
-st.markdown("---")
-
+# Navigazione principale
 nav_principale = st.radio(
     "Navigazione Sistema:",
     ["💬 Bacheca Social (Home)", "📁 Cartella 50 Capitoli & 300 Moduli"],
@@ -86,4 +78,4 @@ if nav_principale == "💬 Bacheca Social (Home)":
         st.markdown("---")
 else:
     st.subheader("📁 Cartella Master: I 50 Capitoli & 300 Moduli")
-    st.write("Selettore dei moduli isolati attivo.")
+    st.write("Seleziona un modulo dall'archivio.")
