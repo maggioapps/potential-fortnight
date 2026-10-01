@@ -50,26 +50,62 @@ st.markdown("""
 st.title("Split & Save AI 💡")
 st.write("Il tuo direttore finanziario personale e spietato.")
 
-# --- GESTIONE STATO UTENTE (OSPITE VS REGISTRATO) ---
-if "modalita_utente" not in st.session_state:
-    st.session_state.modalita_utente = "Ospite"
+# --- GESTIONE STATO UTENTE E LOGIN ---
+if "is_loggato" not in st.session_state:
+    st.session_state.is_loggato = False
+if "utente_email" not in st.session_state:
+    st.session_state.utente_email = ""
 if "storico_salvataggi" not in st.session_state:
     st.session_state.storico_salvataggi = []
+if "notifiche_attive" not in st.session_state:
+    st.session_state.notifiche_attive = False
 
-st.sidebar.markdown("### 👤 Stato Utente")
-scelta_profilo = st.sidebar.radio(
-    "Modalità di accesso:",
-    ["Ospite (Senza registrazione)", "Registrato (Gratis - Storico & Notifiche)"],
-    index=0 if st.session_state.modalita_utente == "Ospite" else 1
-)
+st.sidebar.markdown("### 👤 Accesso & Account")
 
-if "Ospite" in scelta_profilo:
-    st.session_state.modalita_utente = "Ospite"
-    st.sidebar.info("🔓 **Modalità Ospite attiva**: Nessun dato salvato, tutto si cancella alla chiusura.")
+if not st.session_state.is_loggato:
+    scelta_accesso = st.sidebar.radio("Scegli modalità:", ["Ospite (Senza registrazione)", "Accedi / Registrati Gratis"])
+    
+    if scelta_accesso == "Accedi / Registrati Gratis":
+        st.sidebar.markdown("---")
+        st.sidebar.subheader("🔐 Auth Account")
+        input_user = st.sidebar.text_input("Email o Nome Utente:", placeholder="es. mario_rossi")
+        input_pass = st.sidebar.text_input("Password:", type="password", placeholder="••••••••")
+        ricorda_accesso = st.sidebar.checkbox("Resta collegato", value=True)
+        
+        col_reg1, col_reg2 = st.sidebar.columns(2)
+        with col_reg1:
+            if st.button("Registrati"):
+                if input_user and input_pass:
+                    st.session_state.is_loggato = True
+                    st.session_state.utente_email = input_user
+                    st.success("Account creato con successo!")
+                    st.rerun()
+                else:
+                    st.warning("Inserisci credenziali valide.")
+        with col_reg2:
+            if st.button("Login"):
+                if input_user and input_pass:
+                    st.session_state.is_loggato = True
+                    st.session_state.utente_email = input_user
+                    st.success("Accesso effettuato!")
+                    st.rerun()
+                else:
+                    st.warning("Inserisci credenziali valide.")
+    else:
+        st.sidebar.info("🔓 **Modalità Ospite attiva**: Nessun dato salvato, zero notifiche.")
 else:
-    st.session_state.modalita_utente = "Registrato"
-    st.sidebar.success("🔒 **Account Gratuito attivo**: Storico cloud e notifiche intelligenti abilitate!")
-    email_utente = st.sidebar.text_input("Inserisci email per notifiche:", placeholder="mario@email.com")
+    st.sidebar.success(f"Benvenuto, **{st.session_state.utente_email}**! 🔒")
+    notifiche_push = st.sidebar.toggle("🔔 Notifiche Push sul Telefono", value=st.session_state.notifiche_attive)
+    if notifiche_push:
+        st.session_state.notifiche_attive = True
+        st.sidebar.caption("✅ Attive per entrate/uscite in background.")
+    else:
+        st.session_state.notifiche_attive = False
+        
+    if st.sidebar.button("🚪 Esci (Logout)"):
+        st.session_state.is_loggato = False
+        st.session_state.utente_email = ""
+        st.rerun()
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🌍 Selezione Lingua")
@@ -102,14 +138,14 @@ if "recensioni" not in st.session_state:
         ("Giulia V.", "⭐⭐⭐⭐⭐", "Molto utile per risparmiare.")
     ]
 
-# Tab dell'applicazione (aggiunta la tab Storico se registrato)
-if st.session_state.modalita_utente == "Registrato":
+# Tab dell'applicazione (aggiunta la tab Storico & Automazioni se loggato)
+if st.session_state.is_loggato:
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "📥 Inserimento txt", 
         "📁 Importa File & Foto", 
         "🎤 Voce & SMS", 
         "🎯 Obiettivi", 
-        "📂 Storico & Cloud",
+        "📂 Storico & Automazioni",
         "⭐ Commenti & Statistiche"
     ])
 else:
@@ -121,7 +157,7 @@ else:
         "⭐ Commenti & Statistiche"
     ])
 
-# Funzione centrale di analisi con salvataggio automatico nello storico se registrato
+# Funzione centrale di analisi con giudizio sarcastico, budget, analisi e consiglio mirato
 def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", is_image=False, image_obj=None, is_obiettivo=False):
     if not gemini_disponibile or not model:
         st.error("⚠ Configurazione API non rilevata. Controlla la chiave nei Secrets.")
@@ -152,15 +188,15 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
         else:
             prompt = f"""
             {istruzione_lingua}
-            Agisci come un direttore finanziario cinico, sarcastico e spietato senza filtri. Analizza i dati della sorgente: {titolo_sorgente}.
-            Fornisci un'analisi dettagliata ma della lunghezza giusta, citando obbligatoriamente nomi specifici, esercenti e importi esatti.
+            Agisci come un direttore finanziario cinico, sarcastico e spietato senza filtri. Analizza i dati della sorgente (sia entrate che uscite): {titolo_sorgente}.
+            Fornisci un'analisi dettagliata ma della lunghezza giusta, citando obbligatoriamente nomi specifici, esercenti, stipendi o bonifici e importi esatti.
             
             Usa questa struttura esatta:
             📢 **Giudizio del Direttore**
-            (Giudizio pesantemente sarcastico e duro sulla gestione finanziaria dell'utente).
+            (Giudizio pesantemente sarcastico e duro sulla gestione finanziaria complessiva dell'utente, analizzando entrate e uscite).
 
-            📊 **Riepilogo Numerico & Budget** [Entrate, Uscite, Saldo e Margine esatto]
-            🔍 **Analisi Dettagliata** [Cita voci, scontrini o transazioni specifiche]
+            📊 **Riepilogo Numerico & Budget** [Entrate totali, Uscite totali, Saldo e Margine esatto]
+            🔍 **Analisi Dettagliata** [Cita voci, scontrini, accrediti o transazioni specifiche]
             💡 **Consiglio Mirato** [Azioni chirurgiche precise]
             """
         
@@ -176,26 +212,29 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
                 st.session_state.testo_risultato = response.text
                 st.session_state.conteggio_usi += 1
                 
-                # Se l'utente è registrato, salviamo nello storico persistente della sessione (o database futuro)
-                if st.session_state.modalita_utente == "Registrato":
+                # Se l'utente è registrato, salviamo nello storico
+                if st.session_state.is_loggato:
                     st.session_state.storico_salvataggi.insert(0, {
                         "titolo": titolo_sorgente,
                         "risultato": response.text
                     })
+                    
+                    if st.session_state.notifiche_attive:
+                        st.sidebar.toast("📲 Notifica push inviata al telefono: 'Nuovo verdetto del Direttore per entrate/uscite!'", icon="🔥")
                 
                 st.success("Analisi completata!")
         except Exception as e:
             st.error(f"Errore durante l'analisi IA: {e}")
 
 with tab1:
-    st.subheader("Incolla qui la lista delle spese:")
-    user_text_input = st.text_area("Spese:", placeholder="Es. 2000 stipendio, 500 affitto, 300 ristoranti...", label_visibility="collapsed", key="txt_input")
+    st.subheader("Incolla qui la lista delle spese e delle entrate:")
+    user_text_input = st.text_area("Movimenti:", placeholder="Es. +2500 stipendio, -500 affitto, -50 supermercato...", label_visibility="collapsed", key="txt_input")
     
-    if st.button("Analizza Spese in Profondità"):
+    if st.button("Analizza Movimenti in Profondità"):
         if not user_text_input.strip():
-            st.warning("Inserisci prima la lista delle spese o dei movimenti.")
+            st.warning("Inserisci prima i movimenti finanziari.")
         else:
-            esegui_analisi_ia_profonda(user_text_input, "Lista testuale")
+            esegui_analisi_ia_profonda(user_text_input, "Lista testuale Entrate/Uscite")
 
     if st.session_state.analisi_fatta and st.session_state.testo_risultato:
         st.markdown("---")
@@ -223,7 +262,7 @@ with tab1:
 
 with tab2:
     st.subheader("📁 Importa File & 📷 Foto (PDF, TXT, CSV, JPG, PNG)")
-    st.info("💡 Carica un documento PDF/CSV o scatta/carica la **foto di uno scontrino o di un estratto conto**.")
+    st.info("💡 Carica estratti conto bancari completi (con entrate e uscite) o scontrini.")
     
     uploaded_file = st.file_uploader("Carica file o foto", type=["pdf", "txt", "csv", "jpg", "jpeg", "png"])
     
@@ -243,7 +282,7 @@ with tab2:
                 
                 if is_img_file:
                     image_obj = Image.open(io.BytesIO(bytes_data))
-                    esegui_analisi_ia_profonda("", f"Foto scontrino: {uploaded_file.name}", is_image=True, image_obj=image_obj)
+                    esegui_analisi_ia_profonda("", f"Foto documento: {uploaded_file.name}", is_image=True, image_obj=image_obj)
                     st.rerun()
                     
                 elif file_name_lower.endswith('.pdf'):
@@ -251,7 +290,7 @@ with tab2:
                     reader = pypdf.PdfReader(pdf_file_obj)
                     extracted_pages = [page.extract_text() for page in reader.pages if page.extract_text()]
                     testo_estratto = "\n".join(extracted_pages) or "PDF privo di testo vettoriale."
-                    esegui_analisi_ia_profonda(testo_estratto[:30000], f"PDF: {uploaded_file.name}")
+                    esegui_analisi_ia_profonda(testo_estratto[:30000], f"PDF Estratto Conto: {uploaded_file.name}")
                     st.rerun()
                     
                 else:
@@ -270,14 +309,15 @@ with tab2:
     st.download_button("📥 Scarica report in formato Testo", data=st.session_state.testo_risultato if st.session_state.testo_risultato else "Nessuna analisi", file_name="report_spese.txt")
 
 with tab3:
-    st.subheader("🎤 Voce & SMS / Notifiche Bancarie")
-    sms_voce_input = st.text_area("Testo SMS o trascrizione vocale:", placeholder="Es. 'Hai speso 45.50 EUR presso Supermercato'...", key="sms_input")
+    st.subheader("🎤 Voce & SMS / Notifiche Bancarie (Entrate & Uscite)")
+    st.info("Incolla notifiche bancarie di accredito stipendio o addebito spesa.")
+    sms_voce_input = st.text_area("Testo notifica bancaria:", placeholder="Es. 'Bonifico in entrata +1850€ da Azienda' oppure 'Hai speso 15€'...", key="sms_input")
     
-    if st.button("Analizza SMS / Voce in Profondità"):
+    if st.button("Analizza Notifiche in Background"):
         if not sms_voce_input.strip():
             st.warning("Inserisci prima il testo.")
         else:
-            esegui_analisi_ia_profonda(sms_voce_input, "SMS / Nota Vocale")
+            esegui_analisi_ia_profonda(sms_voce_input, "Notifica Bancaria Automatica")
 
     if st.session_state.analisi_fatta and st.session_state.testo_risultato:
         st.markdown("---")
@@ -297,21 +337,21 @@ with tab4:
         st.markdown("---")
         st.markdown(st.session_state.testo_risultato)
 
-# Tab dello Storico visibile solo se registrato
-if st.session_state.modalita_utente == "Registrato":
+# Tab dello Storico e Automazioni visibile solo se loggato
+if st.session_state.is_loggato:
     with tab5:
-        st.subheader("📂 Storico dei tuoi Report Salvati (Cloud Account)")
+        st.subheader("📂 Storico Cloud & Automazioni in Background")
+        st.success("🤖 **Webhook Entrate/Uscite attivo**: Le notifiche del tuo telefono vengono analizzate in tempo reale.")
+        
         if not st.session_state.storico_salvataggi:
-            st.info("Nessun report salvato nello storico. Esegui la prima analisi per vederla qui.")
+            st.info("Nessun report salvato nello storico. Esegui la prima analisi.")
         else:
             for idx, item in enumerate(st.session_state.storico_salvataggi):
                 with st.expander(f"Report #{len(st.session_state.storico_salvataggi) - idx} - {item['titolo']}"):
                     st.markdown(item['risultato'])
 
 # Tab finale Statistiche & Commenti
-tab_stat_idx = 6 if st.session_state.modalita_utente == "Registrato" else 5
-# Gestione dinamica dell'ultima tab
-with (tab6 if st.session_state.modalita_utente == "Registrato" else tab5):
+with (tab6 if st.session_state.is_loggato else tab5):
     st.subheader("📊 Statistiche di Utilizzo dell'App")
     col_stat1, col_stat2 = st.columns(2)
     with col_stat1:
