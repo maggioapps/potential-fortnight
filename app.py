@@ -14,17 +14,17 @@ if "posts" not in st.session_state:
         {
             "id": 1,
             "utente": "AuraSync Community",
-            "testo": "Benvenuti nella bacheca ufficiale di AURASYNC! Condividete idee, progetti e interagite in tempo reale.",
-            "likes": 12,
-            "commenti": ["Spettacolare!", "Ottima piattaforma."],
+            "testo": "Benvenuti nella bacheca ufficiale di AURASYNC! Questo è il feed principale in stile social.",
+            "likes": 15,
+            "commenti": ["Bellissimo aggiornamento!", "Ottima piattaforma."],
             "condivisibile": True
         }
     ]
 
 if "visitatori" not in st.session_state:
-    st.session_state["visitatori"] = 24
+    st.session_state["visitatori"] = 35
 if "utilizzi" not in st.session_state:
-    st.session_state["utilizzi"] = 105
+    st.session_state["utilizzi"] = 120
 
 # --- INTESTAZIONE PRINCIPALE: AURASYNC & CONTATORE LIVE ---
 col_logo, col_counter = st.columns([3, 1])
@@ -56,7 +56,7 @@ if query_universale:
 st.markdown("---")
 
 # --- MENU DI NAVIGAZIONE PRINCIPALE ---
-# La Bacheca Social è la schermata principale di default (stile Facebook)
+# La Bacheca Social è la schermata principale (Home) di default
 nav_principale = st.radio(
     "Navigazione Sistema:",
     ["💬 Bacheca Social (Home)", "📁 Cartella 50 Capitoli & 300 Moduli"],
@@ -74,7 +74,7 @@ if nav_principale == "💬 Bacheca Social (Home)":
 
     # Box per la creazione di un nuovo post
     with st.form("form_creazione_post", clear_on_submit=True):
-        nome_autore = st.text_input("Il tuo Nome / Nickname:", placeholder="Es. Marco Rossi")
+        nome_autore = st.text_input("Il tuo Nome / Nickname:", placeholder="Es. Mario Rossi")
         contenuto_post = st.text_area("A cosa stai pensando?", placeholder="Scrivi il tuo post...")
         concedi_condivisione = st.checkbox("Consenti la condivisione esterna di questo post")
         
@@ -153,7 +153,6 @@ else:
             "Dashboard Zero-Click", "Generatore Report PDF", "Esportatore Tabelle Excel", 
             "Convertitore Universale Unità", "Agenda Globale & Promemoria", "Note Rapide Crittografate"
         ]
-        # Nota: L'architettura è scalabile fino a 50 capitoli seguendo questo schema a dizionario.
     }
 
     # Selezione del capitolo
