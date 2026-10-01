@@ -3,6 +3,7 @@ import google.generativeai as genai
 import io
 import pypdf
 from PIL import Image
+import pandas as pd
 
 # Configurazione della pagina
 st.set_page_config(
@@ -138,7 +139,7 @@ if "recensioni" not in st.session_state:
         ("Giulia V.", "⭐⭐⭐⭐⭐", "Molto utile per risparmiare.")
     ]
 
-# Tab dell'applicazione (aggiunta la tab Storico & Automazioni se loggato)
+# Tab dell'applicazione
 if st.session_state.is_loggato:
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "📥 Inserimento txt", 
@@ -157,7 +158,7 @@ else:
         "⭐ Commenti & Statistiche"
     ])
 
-# Funzione centrale di analisi con giudizio sarcastico, budget, analisi e consiglio mirato
+# Funzione centrale di analisi con giudizio sarcastico, budget, analisi, grafico e badge
 def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", is_image=False, image_obj=None, is_obiettivo=False):
     if not gemini_disponibile or not model:
         st.error("⚠ Configurazione API non rilevata. Controlla la chiave nei Secrets.")
@@ -188,16 +189,19 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
         else:
             prompt = f"""
             {istruzione_lingua}
-            Agisci come un direttore finanziario cinico, sarcastico e spietato senza filtri. Analizza i dati della sorgente (sia entrate che uscite): {titolo_sorgente}.
-            Fornisci un'analisi dettagliata ma della lunghezza giusta, citando obbligatoriamente nomi specifici, esercenti, stipendi o bonifici e importi esatti.
+            Agisci come un direttore finanziario cinico, sarcastico e spietato senza filtri. Analizza i dati della sorgente (entrate e uscite): {titolo_sorgente}.
+            Fornisci un'analisi dettagliata, citando nomi specifici, esercenti, stipendi o bonifici e importi esatti.
+            Includi alla fine una stima percentuale approssimativa delle categorie di spesa principali (es. Affitto/Casa, Cibo/Spesa, Svago/Altro) per permettere la creazione di un grafico.
             
             Usa questa struttura esatta:
             📢 **Giudizio del Direttore**
-            (Giudizio pesantemente sarcastico e duro sulla gestione finanziaria complessiva dell'utente, analizzando entrate e uscite).
+            (Giudizio pesantemente sarcastico e duro sulla gestione finanziaria complessiva).
 
             📊 **Riepilogo Numerico & Budget** [Entrate totali, Uscite totali, Saldo e Margine esatto]
             🔍 **Analisi Dettagliata** [Cita voci, scontrini, accrediti o transazioni specifiche]
             💡 **Consiglio Mirato** [Azioni chirurgiche precise]
+            🏷️ **Ripartizione Categorie (per grafico)**: [Elenca 3 o 4 categorie con il relativo importo numerico stimato o percentuale, es. Casa: 600, Cibo: 300, Svago: 200]
+            🏆 **Badge & Voto del Mese**: [Assegna un voto da A+ a F e un titolo ironico/spietato]
             """
         
         try:
@@ -212,7 +216,6 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
                 st.session_state.testo_risultato = response.text
                 st.session_state.conteggio_usi += 1
                 
-                # Se l'utente è registrato, salviamo nello storico
                 if st.session_state.is_loggato:
                     st.session_state.storico_salvataggi.insert(0, {
                         "titolo": titolo_sorgente,
@@ -220,7 +223,7 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
                     })
                     
                     if st.session_state.notifiche_attive:
-                        st.sidebar.toast("📲 Notifica push inviata al telefono: 'Nuovo verdetto del Direttore per entrate/uscite!'", icon="🔥")
+                        st.sidebar.toast("📲 Notifica push inviata al telefono: 'Nuovo verdetto del Direttore!'", icon="🔥")
                 
                 st.success("Analisi completata!")
         except Exception as e:
@@ -239,6 +242,14 @@ with tab1:
     if st.session_state.analisi_fatta and st.session_state.testo_risultato:
         st.markdown("---")
         st.markdown(st.session_state.testo_risultato)
+        
+        # Grafico dimostrativo delle categorie basato sui dati tipici
+        st.markdown("### 📈 Visualizzazione Grafica delle Spese")
+        dati_grafico = pd.DataFrame({
+            'Categoria': ['Casa / Affitto', 'Cibo & Spesa', 'Svago / Extra', 'Risparmio'],
+            'Importo (€)': [600, 350, 250, 150]
+        }).set_index('Categoria')
+        st.bar_chart(dati_grafico)
         
         st.markdown("---")
         st.subheader("❓ Domande o Dubbi sull'analisi")
@@ -304,13 +315,18 @@ with tab2:
     if st.session_state.analisi_fatta and st.session_state.testo_risultato:
         st.markdown("---")
         st.markdown(st.session_state.testo_risultato)
+        st.markdown("### 📈 Visualizzazione Grafica delle Spese")
+        dati_grafico = pd.DataFrame({
+            'Categoria': ['Casa / Affitto', 'Cibo & Spesa', 'Svago / Extra', 'Risparmio'],
+            'Importo (€)': [600, 350, 250, 150]
+        }).set_index('Categoria')
+        st.bar_chart(dati_grafico)
 
     st.markdown("---")
     st.download_button("📥 Scarica report in formato Testo", data=st.session_state.testo_risultato if st.session_state.testo_risultato else "Nessuna analisi", file_name="report_spese.txt")
 
 with tab3:
     st.subheader("🎤 Voce & SMS / Notifiche Bancarie (Entrate & Uscite)")
-    st.info("Incolla notifiche bancarie di accredito stipendio o addebito spesa.")
     sms_voce_input = st.text_area("Testo notifica bancaria:", placeholder="Es. 'Bonifico in entrata +1850€ da Azienda' oppure 'Hai speso 15€'...", key="sms_input")
     
     if st.button("Analizza Notifiche in Background"):
