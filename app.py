@@ -25,7 +25,7 @@ try:
     if api_key:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(
-            model_name='gemini-3.8-live',
+            model_name='gemini-3.8-flash',
             generation_config={"temperature": 0.8, "max_output_tokens": 2048}
         )
         gemini_disponibile = True
