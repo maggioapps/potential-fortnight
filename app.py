@@ -43,6 +43,9 @@ def carica_json(file_path, default_val):
         try:
             with open(file_path, "r", encoding="utf-8") as f:
                 dati = json.load(f)
+                # Conversione difensiva: se ci aspettiamo un dict ma troviamo una lista (vecchio formato), la mappiamo
+                if isinstance(default_val, dict) and isinstance(dati, list):
+                    return {"Ospite": dati}
                 if isinstance(dati, type(default_val)):
                     return dati
         except Exception:
