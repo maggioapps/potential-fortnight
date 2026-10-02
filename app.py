@@ -15,7 +15,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# Configurazione Gemini
+# Configurazione Gemini (con max_output_tokens aumentato per evitare tagli)
 gemini_disponibile = False
 model = None
 
@@ -25,7 +25,7 @@ try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(
             model_name='gemini-3.8-flash',
-            generation_config={"temperature": 0.8, "max_output_tokens": 2048}
+            generation_config={"temperature": 0.7, "max_output_tokens": 8192}
         )
         gemini_disponibile = True
 except Exception:
@@ -178,7 +178,7 @@ else:
         "⭐ Statistiche & Commenti"
     ])
 
-# Funzione centrale di analisi con struttura obbligatoria completa
+# Funzione centrale di analisi con prompt ottimizzato per includere tutto
 def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", is_image=False, image_obj=None, is_obiettivo=False):
     if not gemini_disponibile or not model:
         st.error("⚠ Configurazione API non rilevata o modello non disponibile.")
@@ -193,18 +193,16 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
 
         prompt = f"""
         {istruzione_lingua}
-        Agisci come un direttore finanziario cinico, spietato ma saggio. Analizza i dati o l'obiettivo fornito: '{contenuto_input}' ({titolo_sorgente}).
-        Usa rigorosamente la valuta '{valuta_selezionata}' per qualsiasi importo monetario.
+        Agisci come un direttore finanziario cinico, spietato ma saggio. Analizza i dati o l'obiettivo: '{contenuto_input}' ({titolo_sorgente}).
+        Usa rigorosamente la valuta '{valuta_selezionata}' per qualsiasi importo.
         
-        Rispondi seguendo rigorosamente ed esclusivamente questo schema in markdown, assicurandoti di includere ogni singola sezione richiesta:
+        SII CONCISO ma scrivi ASSOLUTAMENTE tutte e 5 le sezioni seguenti in ordine, senza interrompere la risposta a metà:
         
-        🛑 **Giudizio** [Un giudizio pesante, cinico e tagliente sulla situazione o sull'obiettivo]
-        🔍 **Analisi** [Esame dettagliato delle voci, delle follie o delle pretese]
-        💰 **Budget** [Riepilogo numerico chiaro, entrate, uscite, margine e stime in {valuta_selezionata}]
-        💡 **Consiglio finanziario mirato** [Misure drastiche, pratiche e mirate per rimettere in riga i conti]
-        
-        💱 **Valuta di riferimento:** {valuta_selezionata}
-        ⭐ **Stelle e Giudizio finale:** [Assegna da 1 a 5 stelle (es. ⭐⭐⭐☆☆) con una breve motivazione sarcastica]
+        🛑 **Giudizio** [Un giudizio pesante e tagliente]
+        🔍 **Analisi** [Breve esame delle spese o pretese]
+        💰 **Budget** [Entrate, uscite e margine stimato in {valuta_selezionata}]
+        💡 **Consiglio finanziario mirato** [Azione pratica e drastica da compiere subito]
+        ⭐ **Stelle** [Assegna da 1 a 5 stelle con breve motivazione]
         """
         
         try:
