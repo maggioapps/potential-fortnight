@@ -292,12 +292,12 @@ with tab1:
         st.markdown(st.session_state.testo_risultato)
         
         st.markdown("---")
-        st.subheader("❓ Domande o Dubbi sull'analisi")
-        user_question = st.text_input("Vuoi chiedere un chiarimento o approfondire?", placeholder="Es. Come posso tagliare sulle bollette?", key="q_tab1")
+        st.subheader("❓ Dubbi o domande")
+        user_question = st.text_input("Fai una domanda o chiedi un chiarimento:", placeholder="Es. Come posso tagliare sulle bollette?", key="q_tab1")
         
         col_1, col_2 = st.columns(2)
         with col_1:
-            if st.button("Fai una domanda al consulente", key="btn_domanda_tab1"):
+            if st.button("Invia domanda al consulente", key="btn_domanda_tab1"):
                 if user_question.strip() and model:
                     with st.spinner("Elaborazione risposta..."):
                         f_resp = model.generate_content(f"Rispondi in lingua {lingua_selezionata}, mantieni un tono ironico ma rispettoso e costruttivo basandoti sull'analisi precedente: {user_question}")
@@ -325,7 +325,6 @@ with tab2:
         else:
             st.success(f"File caricato: **{uploaded_file.name}**")
         
-        # ELABORAZIONE DIRETTA SENZA ST.RERUN PER EVITARE IL RESET DEL FILE
         if st.button("🚀 Avvia Analisi Avanzata File / Foto", key="btn_avvia_file"):
             try:
                 bytes_data = uploaded_file.getvalue()
@@ -351,6 +350,26 @@ with tab2:
         st.markdown(st.session_state.testo_risultato)
         st.markdown("---")
         st.download_button("📥 Scarica report in formato Testo", data=st.session_state.testo_risultato, file_name="report_spese.txt", key="download_report_tab2")
+        
+        # BARRA DI RISPOSTA (DUBBI O DOMANDE) IN FINE
+        st.markdown("---")
+        st.subheader("❓ Dubbi o domande")
+        user_question_tab2 = st.text_input("Fai una domanda o chiedi un chiarimento sul report:", placeholder="Es. Spiegami meglio il punto 1...", key="q_tab2")
+        
+        col_q1, col_q2 = st.columns(2)
+        with col_q1:
+            if st.button("Invia domanda al consulente", key="btn_domanda_tab2"):
+                if user_question_tab2.strip() and model:
+                    with st.spinner("Elaborazione risposta..."):
+                        f_resp = model.generate_content(f"Rispondi in lingua {lingua_selezionata}, mantieni un tono ironico ma rispettoso e costruttivo basandoti sull'analisi del file precedente: {user_question_tab2}")
+                        if f_resp and f_resp.text:
+                            st.markdown("### 💬 Risposta del Consulente:")
+                            st.markdown(f_resp.text)
+        with col_q2:
+            if st.button("🔄 Nuova analisi file", key="btn_reset_tab2"):
+                st.session_state.analisi_fatta = False
+                st.session_state.testo_risultato = ""
+                st.rerun()
 
 with tab3:
     st.subheader("🎤 Voce & SMS / Notifiche Bancarie (Entrate & Uscite)")
@@ -367,6 +386,17 @@ with tab3:
         mostra_grafico_compatto(id_grafico="tab3")
         st.markdown("---")
         st.markdown(st.session_state.testo_risultato)
+        
+        st.markdown("---")
+        st.subheader("❓ Dubbi o domande")
+        user_question_tab3 = st.text_input("Fai una domanda o chiedi un chiarimento:", placeholder="Scrivi qui...", key="q_tab3")
+        if st.button("Invia domanda al consulente", key="btn_domanda_tab3"):
+            if user_question_tab3.strip() and model:
+                with st.spinner("Elaborazione risposta..."):
+                    f_resp = model.generate_content(f"Rispondi in lingua {lingua_selezionata}, mantieni un tono ironico ma rispettoso: {user_question_tab3}")
+                    if f_resp and f_resp.text:
+                        st.markdown("### 💬 Risposta del Consulente:")
+                        st.markdown(f_resp.text)
 
 with tab4:
     st.subheader("🎯 I tuoi Obiettivi Personali di Risparmio")
@@ -381,6 +411,17 @@ with tab4:
     if st.session_state.analisi_fatta and st.session_state.testo_risultato:
         st.markdown("---")
         st.markdown(st.session_state.testo_risultato)
+        
+        st.markdown("---")
+        st.subheader("❓ Dubbi o domande")
+        user_question_tab4 = st.text_input("Fai una domanda sull'obiettivo:", placeholder="Scrivi qui...", key="q_tab4")
+        if st.button("Invia domanda al consulente", key="btn_domanda_tab4"):
+            if user_question_tab4.strip() and model:
+                with st.spinner("Elaborazione risposta..."):
+                    f_resp = model.generate_content(f"Rispondi in lingua {lingua_selezionata}, mantieni un tono ironico ma rispettoso: {user_question_tab4}")
+                    if f_resp and f_resp.text:
+                        st.markdown("### 💬 Risposta del Consulente:")
+                        st.markdown(f_resp.text)
 
 with tab5:
     st.subheader("🔥 Il Generatore di Insulti (e Reazioni del Direttore)")
