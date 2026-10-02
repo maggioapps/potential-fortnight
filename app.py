@@ -144,7 +144,7 @@ lista_lingue = [
     "Italiano", "English", "Español", "Français", "Deutsch", 
     "Português", "Română", "العربية", "中文", "हिन्दी", 
     "日本語", "Русский", "Polski", "Nederlands", "Ελληνικά", 
-    "Türkçe", "Українська", "Magyar", "Čeština", "Svenska", "한국어"
+    "Türkçe", "Українська", "Magyar", "Čeština", "Svenska", "한국er"
 ]
 lingua_selezionata = st.sidebar.selectbox("Scegli la lingua:", lista_lingue)
 
@@ -158,42 +158,38 @@ if "analisi_fatta" not in st.session_state:
     st.session_state.analisi_fatta = False
 if "testo_risultato" not in st.session_state:
     st.session_state.testo_risultato = ""
-if "ultimo_insulto" not in st.session_state:
-    st.session_state.ultimo_insulto = ""
 if "recensioni" not in st.session_state:
     st.session_state.recensioni = [
         ("Marco R.", "⭐⭐⭐⭐⭐", "App fantastica!"),
         ("Giulia V.", "⭐⭐⭐⭐⭐", "Molto utile per risparmiare.")
     ]
 
-# Tab dell'applicazione
+# Tab dell'applicazione (rimosso il tab separato degli insulti, integrati ovunque)
 if st.session_state.is_loggato:
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-        "📥 Inserimento txt", 
-        "📁 Importa File & Foto", 
-        "🎤 Voce & SMS", 
-        "🎯 Obiettivi", 
-        "🔥 Generatore Insulti",
-        "📂 Storico & Automazioni",
-        "⭐ Commenti & Statistiche"
-    ])
-else:
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "📥 Inserimento txt", 
         "📁 Importa File & Foto", 
         "🎤 Voce & SMS", 
         "🎯 Obiettivi", 
-        "🔥 Generatore Insulti",
+        "📂 Storico & Automazioni",
+        "⭐ Commenti & Statistiche"
+    ])
+else:
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "📥 Inserimento txt", 
+        "📁 Importa File & Foto", 
+        "🎤 Voce & SMS", 
+        "🎯 Obiettivi", 
         "⭐ Commenti & Statistiche"
     ])
 
-# Funzione centrale di analisi
+# Funzione centrale di analisi con insulti e giudizi automatici integrati
 def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", is_image=False, image_obj=None, is_obiettivo=False):
     if not gemini_disponibile or not model:
         st.error("⚠ Configurazione API non rilevata o modello non disponibile. Controlla la chiave nei Secrets.")
         return
     
-    with st.spinner("💎 Analisi finanziaria in corso..."):
+    with st.spinner("💎 Il Direttore sta analizzando (e giudicando) i tuoi conti..."):
         istruzione_lingua = ""
         if lingua_selezionata == "Rilevamento Automatico (Auto)":
             istruzione_lingua = "Rileva automaticamente la lingua e rispondi nella stessa."
@@ -203,27 +199,27 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
         if is_obiettivo:
             prompt = f"""
             {istruzione_lingua}
-            Agisci come un consulente finanziario cinico ma saggio. L'utente ha inserito questo obiettivo: '{contenuto_input}'.
-            Fornisci un'analisi tagliente ma costruttiva, rispettando la sensibilità della persona ed evitando di calcare troppo la mano se c'è fragilità.
+            Agisci come un direttore finanziario cinico, tagliente e spietato ma saggio. L'utente ha inserito questo obiettivo: '{contenuto_input}'.
+            Prendi in giro con ironia corrosiva eventuali pretese assurde o ingenue dell'utente, demolendo le scuse ma offrendo poi un piano realistico.
             
             Usa questa struttura esatta:
-            📢 **Giudizio del Direttore sull'Obiettivo**
-            🎯 **Fattibilità & Analisi**
-            ⚠ **Ostacoli Critici**
-            💡 **Consiglio Mirato**
+            🛑 **Il Verdetto Spietato del Direttore**
+            🎯 **Analisi & Fattibilità dell'Obiettivo**
+            ⚠ **Ostacoli Critici & Illusioni**
+            💡 **Consiglio Mirato (e una sveglia morale)**
             """
         else:
             prompt = f"""
             {istruzione_lingua}
-            Agisci come un direttore finanziario cinico ma attento alla fragilità emotiva dell'utente. Analizza i dati (entrate e uscite): {titolo_sorgente}.
-            Cita voci specifiche con ironia tagliente, senza però risultare crudele o demotivante.
+            Agisci come un direttore finanziario cinico, sarcastico ma costruttivo. Analizza i dati (entrate e uscite): {titolo_sorgente}.
+            Prendi in giro apertamente le spese stupide o superflue (aperitivi, shopping compulsivo, micro-bonifici inutili) con insulti ironici e verbali taglienti.
             
             Usa questa struttura esatta:
-            📢 **Giudizio del Direttore**
+            🛑 **Il Verdetto Spietato del Direttore (Insulti & Realtà)**
             📊 **Riepilogo Numerico & Budget** [Entrate, Uscite, Saldo e Margine]
-            🔍 **Analisi Dettagliata** [Transazioni specifiche]
-            💡 **Consiglio Mirato** [Azioni precise]
-            🏆 **Badge & Voto del Mese**: [Voto da A+ a F e titolo ironico]
+            🔍 **Analisi Dettagliata delle follie** [Transazioni specifiche]
+            💡 **Consiglio Mirato** [Azioni precise per rimettersi in riga]
+            🏆 **Badge & Voto del Mese**: [Voto da A+ a F e titolo ironico/sarcastico]
             """
         
         try:
@@ -247,9 +243,9 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
                         "risultato": response.text
                     })
                     if st.session_state.notifiche_attive:
-                        st.sidebar.toast("📲 Notifica push: 'Nuovo verdetto del Direttore!'", icon="🔥")
+                        st.sidebar.toast("📲 Notifica push: 'Il Direttore ha emesso un nuovo verdetto caustico!'", icon="🔥")
                 
-                st.success("Analisi completata!")
+                st.success("Analisi completata con successo!")
         except Exception as e:
             st.error(f"Errore durante l'analisi IA: {e}")
 
@@ -277,9 +273,9 @@ def mostra_grafico_compatto(id_grafico="default"):
 
 with tab1:
     st.subheader("Incolla qui la lista delle spese e delle entrate:")
-    user_text_input = st.text_area("Movimenti:", placeholder="Es. +2500 stipendio, -500 affitto, -50 supermercato...", label_visibility="collapsed", key="txt_input")
+    user_text_input = st.text_area("Movimenti:", placeholder="Es. +2500 stipendio, -500 affitto, -50 aperitivi...", label_visibility="collapsed", key="txt_input")
     
-    if st.button("Analizza Movimenti in Profondità", key="btn_tab1"):
+    if st.button("Analizza & Giudica Movimenti", key="btn_tab1"):
         if not user_text_input.strip():
             st.warning("Inserisci prima i movimenti finanziari.")
         else:
@@ -297,12 +293,12 @@ with tab1:
         
         col_1, col_2 = st.columns(2)
         with col_1:
-            if st.button("Invia domanda al consulente", key="btn_domanda_tab1"):
+            if st.button("Invia domanda al direttore", key="btn_domanda_tab1"):
                 if user_question.strip() and model:
                     with st.spinner("Elaborazione risposta..."):
-                        f_resp = model.generate_content(f"Rispondi in lingua {lingua_selezionata}, mantieni un tono ironico ma rispettoso e costruttivo basandoti sull'analisi precedente: {user_question}")
+                        f_resp = model.generate_content(f"Rispondi in lingua {lingua_selezionata}, mantieni un tono ironico, cinico e tagliente basandoti sull'analisi precedente: {user_question}")
                         if f_resp and f_resp.text:
-                            st.markdown("### 💬 Risposta del Consulente:")
+                            st.markdown("### 💬 Risposta del Direttore:")
                             st.markdown(f_resp.text)
                             
         with col_2:
@@ -325,7 +321,7 @@ with tab2:
         else:
             st.success(f"File caricato: **{uploaded_file.name}**")
         
-        if st.button("🚀 Avvia Analisi Avanzata File / Foto", key="btn_avvia_file"):
+        if st.button("🚀 Avvia Analisi & Verdetto Automatico", key="btn_avvia_file"):
             try:
                 bytes_data = uploaded_file.getvalue()
                 if is_img_file:
@@ -351,19 +347,18 @@ with tab2:
         st.markdown("---")
         st.download_button("📥 Scarica report in formato Testo", data=st.session_state.testo_risultato, file_name="report_spese.txt", key="download_report_tab2")
         
-        # BARRA DI RISPOSTA (DUBBI O DOMANDE) IN FINE
         st.markdown("---")
         st.subheader("❓ Dubbi o domande")
         user_question_tab2 = st.text_input("Fai una domanda o chiedi un chiarimento sul report:", placeholder="Es. Spiegami meglio il punto 1...", key="q_tab2")
         
         col_q1, col_q2 = st.columns(2)
         with col_q1:
-            if st.button("Invia domanda al consulente", key="btn_domanda_tab2"):
+            if st.button("Invia domanda al direttore", key="btn_domanda_tab2"):
                 if user_question_tab2.strip() and model:
                     with st.spinner("Elaborazione risposta..."):
-                        f_resp = model.generate_content(f"Rispondi in lingua {lingua_selezionata}, mantieni un tono ironico ma rispettoso e costruttivo basandoti sull'analisi del file precedente: {user_question_tab2}")
+                        f_resp = model.generate_content(f"Rispondi in lingua {lingua_selezionata}, mantieni un tono ironico, cinico e tagliente basandoti sull'analisi del file precedente: {user_question_tab2}")
                         if f_resp and f_resp.text:
-                            st.markdown("### 💬 Risposta del Consulente:")
+                            st.markdown("### 💬 Risposta del Direttore:")
                             st.markdown(f_resp.text)
         with col_q2:
             if st.button("🔄 Nuova analisi file", key="btn_reset_tab2"):
@@ -373,13 +368,13 @@ with tab2:
 
 with tab3:
     st.subheader("🎤 Voce & SMS / Notifiche Bancarie (Entrate & Uscite)")
-    sms_voce_input = st.text_area("Testo notifica bancaria:", placeholder="Es. 'Bonifico in entrata +1850€'...", key="sms_input")
+    sms_voce_input = st.text_area("Testo notifica bancaria o trascrizione voce:", placeholder="Es. 'Bonifico in uscita -120€ per scarpe inutili'...", key="sms_input")
     
-    if st.button("Analizza Notifiche in Background", key="btn_tab3"):
+    if st.button("Analizza & Giudica Notifica", key="btn_tab3"):
         if not sms_voce_input.strip():
             st.warning("Inserisci prima il testo.")
         else:
-            esegui_analisi_ia_profonda(sms_voce_input, "Notifica Bancaria Automatica")
+            esegui_analisi_ia_profonda(sms_voce_input, "Notifica Bancaria / SMS")
 
     if st.session_state.analisi_fatta and st.session_state.testo_risultato:
         st.markdown("---")
@@ -390,19 +385,19 @@ with tab3:
         st.markdown("---")
         st.subheader("❓ Dubbi o domande")
         user_question_tab3 = st.text_input("Fai una domanda o chiedi un chiarimento:", placeholder="Scrivi qui...", key="q_tab3")
-        if st.button("Invia domanda al consulente", key="btn_domanda_tab3"):
+        if st.button("Invia domanda al direttore", key="btn_domanda_tab3"):
             if user_question_tab3.strip() and model:
                 with st.spinner("Elaborazione risposta..."):
-                    f_resp = model.generate_content(f"Rispondi in lingua {lingua_selezionata}, mantieni un tono ironico ma rispettoso: {user_question_tab3}")
+                    f_resp = model.generate_content(f"Rispondi in lingua {lingua_selezionata}, mantieni un tono ironico e cinico: {user_question_tab3}")
                     if f_resp and f_resp.text:
-                        st.markdown("### 💬 Risposta del Consulente:")
+                        st.markdown("### 💬 Risposta del Direttore:")
                         st.markdown(f_resp.text)
 
 with tab4:
     st.subheader("🎯 I tuoi Obiettivi Personali di Risparmio")
-    obiettivo_input = st.text_input("Descrivi il tuo obiettivo:", placeholder="Es. Vorrei risparmiare 3000 euro per una vacanza.", key="obj_input")
+    obiettivo_input = st.text_input("Descrivi il tuo obiettivo:", placeholder="Es. Vorrei risparmiare 3000 euro per una vacanza extra lusso.", key="obj_input")
     
-    if st.button("Genera Piano Strategico Obiettivo", key="btn_tab4"):
+    if st.button("Genera Piano & Verdetto sull'Obiettivo", key="btn_tab4"):
         if not obiettivo_input.strip():
             st.warning("Inserisci prima il tuo obiettivo.")
         else:
@@ -415,75 +410,16 @@ with tab4:
         st.markdown("---")
         st.subheader("❓ Dubbi o domande")
         user_question_tab4 = st.text_input("Fai una domanda sull'obiettivo:", placeholder="Scrivi qui...", key="q_tab4")
-        if st.button("Invia domanda al consulente", key="btn_domanda_tab4"):
+        if st.button("Invia domanda al direttore", key="btn_domanda_tab4"):
             if user_question_tab4.strip() and model:
                 with st.spinner("Elaborazione risposta..."):
-                    f_resp = model.generate_content(f"Rispondi in lingua {lingua_selezionata}, mantieni un tono ironico ma rispettoso: {user_question_tab4}")
+                    f_resp = model.generate_content(f"Rispondi in lingua {lingua_selezionata}, mantieni un tono ironico e cinico: {user_question_tab4}")
                     if f_resp and f_resp.text:
-                        st.markdown("### 💬 Risposta del Consulente:")
+                        st.markdown("### 💬 Risposta del Direttore:")
                         st.markdown(f_resp.text)
 
-with tab5:
-    st.subheader("🔥 Il Generatore di Insulti (e Reazioni del Direttore)")
-    st.info("Scegli la tua situazione o prova a provocare il sistema.")
-    
-    modalita_input = st.radio("Scegli la modalità di interazione:", [
-        "Situazione finanziaria tipica", 
-        "Voglio provocare / Prendere in giro il sistema 😈"
-    ], key="radio_insulti")
-    
-    if modalita_input == "Situazione finanziaria tipica":
-        situazione_scelta = st.selectbox("Qual è la tua situazione critica oggi?", [
-            "Ho il conto in rosso e mancano 2 settimane a fine mese",
-            "Ho speso tutto lo stipendio in aperitivi e ristoranti",
-            "Compro cianfrusaglie su Amazon che non uso",
-            "Ho zero risparmi e vivo alla giornata",
-            "Guadagno bene ma riesco a spendere il 110% del mio stipendio",
-            "Voglio comprare una cosa inutile che costa un canotto"
-        ], key="select_sit")
-        input_utente_provocazione = ""
-    else:
-        input_utente_provocazione = st.text_input("Scrivi la tua provocazione o presa per il culo verso il sistema:", placeholder="Es. Ma che ne capisci tu bot di plastica...", key="input_provocazione")
-        situazione_scelta = ""
-
-    umore_utente = st.select_slider(
-        "Come ti senti oggi emotivamente?:",
-        options=["Molto fragile / Ho bisogno di tatto 🥺", "Equilibrato / Accetto l'ironia normale 🙂", "Pronto alla battaglia / Distruggimi pure 🥊"],
-        value="Equilibrato / Accetto l'ironia normale 🙂",
-        key="slider_umore"
-    )
-
-    if st.button("💥 Esegui Verdetto", key="btn_verdetto"):
-        if model:
-            with st.spinner("Il Direttore sta valutando..."):
-                tocco_sensibilita = ""
-                if "Molto fragile" in umore_utente:
-                    tocco_sensibilita = "NOTA BENE: L'utente si sente fragile oggi. Sii ironico e spiritoso, ma mantieni toni dolci."
-                elif "Equilibrato" in umore_utente:
-                    tocco_sensibilita = "Usa un'ironia tagliente, brillante e pungente."
-                else:
-                    tocco_sensibilita = "L'utente cerca la rissa verbale. Distruggi le sue scuse con sarcasmo devastante!"
-
-                if modalita_input == "Voglio provocare / Prendere in giro il sistema 😈" and input_utente_provocazione.strip():
-                    prompt_insulto = f"{tocco_sensibilita} L'utente ha provocato dicendo: '{input_utente_provocazione}'."
-                else:
-                    prompt_insulto = f"{tocco_sensibilita} L'utente si trova in questa situazione: '{situazione_scelta}'."
-
-                try:
-                    res_insulto = model.generate_content(prompt_insulto)
-                    if res_insulto and res_insulto.text:
-                        st.session_state.ultimo_insulto = res_insulto.text
-                except Exception as e:
-                    st.session_state.ultimo_insulto = f"Errore: {e}"
-        else:
-            st.session_state.ultimo_insulto = "Il tuo conto in rosso grida vendetta."
-            
-    if st.session_state.ultimo_insulto:
-        st.markdown("---")
-        st.error(f"### 🛑 Verdetto del Direttore:\n\n{st.session_state.ultimo_insulto}")
-
 if st.session_state.is_loggato:
-    with tab6:
+    with tab5:
         st.subheader("📂 Storico Cloud & Automazioni in Background")
         st.success("🤖 **Webhook Entrate/Uscite attivo**.")
         if not st.session_state.storico_salvataggi:
@@ -493,7 +429,7 @@ if st.session_state.is_loggato:
                 with st.expander(f"Report #{len(st.session_state.storico_salvataggi) - idx} - {item['titolo']}"):
                     st.markdown(item['risultato'])
 
-with (tab7 if st.session_state.is_loggato else tab6):
+with (tab6 if st.session_state.is_loggato else tab5):
     st.subheader("📊 Statistiche di Utilizzo dell'App")
     stats_file = carica_statistiche()
     col_stat1, col_stat2 = st.columns(2)
