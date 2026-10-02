@@ -24,7 +24,7 @@ try:
     if api_key:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(
-            model_name='gemini-3.8-flash',
+            model_name='gemini-1.5-flash',
             generation_config={"temperature": 0.8, "max_output_tokens": 2048}
         )
         gemini_disponibile = True
@@ -142,7 +142,6 @@ lista_lingue = [
     "Türkçe", "Українська", "Magyar", "Čeština", "Svenska", "한국어"
 ]
 lingua_selezionata = st.sidebar.selectbox("Scegli la lingua:", lista_lingue)
-
 valuta_selezionata = st.sidebar.selectbox("Valuta di riferimento:", ["Euro (€)", "Dollaro ($)", "Sterlina (£)", "Franco Svizzero (CHF)", "Yen (¥)"])
 
 st.sidebar.markdown("---")
@@ -179,7 +178,7 @@ else:
         "⭐ Statistiche & Commenti"
     ])
 
-# Funzione centrale di analisi con struttura richiesta (inclusi valuta e stelle finali)
+# Funzione centrale di analisi con struttura obbligatoria completa
 def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", is_image=False, image_obj=None, is_obiettivo=False):
     if not gemini_disponibile or not model:
         st.error("⚠ Configurazione API non rilevata o modello non disponibile.")
@@ -192,36 +191,21 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
         else:
             istruzione_lingua = f"Rispondi rigorosamente in lingua: {lingua_selezionata}."
 
-        if is_obiettivo:
-            prompt = f"""
-            {istruzione_lingua}
-            Agisci come un direttore finanziario cinico, spietato ma saggio. L'utente ha inserito questo obiettivo: '{contenuto_input}'.
-            Usa la valuta '{valuta_selezionata}' per qualsiasi importo monetario menzionato.
-            Rispondi seguendo rigorosamente ed esclusivamente questo schema in markdown:
-            
-            🛑 **Giudizio** [Un giudizio pesante, cinico e tagliente basato sulla fattibilità dell'obiettivo]
-            🔍 **Analisi** [Valutazione realistica delle pretese e delle risorse]
-            💰 **Budget** [Stima numerica o requisiti mensili necessari in {valuta_selezionata}]
-            💡 **Consiglio finanziario mirato** [Azione precisa e pratica da compiere]
-            
-            💱 **Valuta di riferimento:** {valuta_selezionata}
-            ⭐ **Stelle e Giudizio finale:** [Assegna da 1 a 5 stelle (es. ⭐⭐⭐☆☆) con una breve motivazione sarcastica]
-            """
-        else:
-            prompt = f"""
-            {istruzione_lingua}
-            Agisci come un direttore finanziario cinico, sarcastico ma costruttivo. Analizza i dati forniti: {titolo_sorgente}.
-            Usa la valuta '{valuta_selezionata}' per tutti gli importi.
-            Rispondi seguendo rigorosamente ed esclusivamente questo schema in markdown:
-            
-            🛑 **Giudizio** [Un giudizio pesante, caustico e diretto sulla situazione finanziaria reale emersa]
-            🔍 **Analisi** [Esame dettagliato delle voci di spesa e delle follie finanziarie]
-            💰 **Budget** [Entrate, Uscite, Saldo e Margine reale in {valuta_selezionata}]
-            💡 **Consiglio finanziario mirato** [Misure drastiche e mirate per risanare i conti]
-            
-            💱 **Valuta di riferimento:** {valuta_selezionata}
-            ⭐ **Stelle e Giudizio finale:** [Assegna da 1 a 5 stelle (es. ⭐⭐☆☆☆) con una breve motivazione sarcastica]
-            """
+        prompt = f"""
+        {istruzione_lingua}
+        Agisci come un direttore finanziario cinico, spietato ma saggio. Analizza i dati o l'obiettivo fornito: '{contenuto_input}' ({titolo_sorgente}).
+        Usa rigorosamente la valuta '{valuta_selezionata}' per qualsiasi importo monetario.
+        
+        Rispondi seguendo rigorosamente ed esclusivamente questo schema in markdown, assicurandoti di includere ogni singola sezione richiesta:
+        
+        🛑 **Giudizio** [Un giudizio pesante, cinico e tagliente sulla situazione o sull'obiettivo]
+        🔍 **Analisi** [Esame dettagliato delle voci, delle follie o delle pretese]
+        💰 **Budget** [Riepilogo numerico chiaro, entrate, uscite, margine e stime in {valuta_selezionata}]
+        💡 **Consiglio finanziario mirato** [Misure drastiche, pratiche e mirate per rimettere in riga i conti]
+        
+        💱 **Valuta di riferimento:** {valuta_selezionata}
+        ⭐ **Stelle e Giudizio finale:** [Assegna da 1 a 5 stelle (es. ⭐⭐⭐☆☆) con una breve motivazione sarcastica]
+        """
         
         try:
             if is_image and image_obj is not None:
