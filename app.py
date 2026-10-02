@@ -16,6 +16,20 @@ st.set_page_config(
     layout="centered"
 )
 
+# --- CONFIGURAZIONE PERSISTENZA SESSIONE DA URL ---
+if "is_loggato" not in st.session_state:
+    st.session_state.is_loggato = False
+if "utente_email" not in st.session_state:
+    st.session_state.utente_email = "Ospite"
+
+# Sincronizzazione automatica all'avvio con i parametri URL del browser
+query_params = st.query_params
+if "utente" in query_params and not st.session_state.is_loggato:
+    user_url = query_params["utente"]
+    if user_url and user_url != "Ospite":
+        st.session_state.is_loggato = True
+        st.session_state.utente_email = user_url
+
 # Configurazione Gemini con Gemini 3.8 Flash ottimizzato per la velocità
 gemini_disponibile = False
 model = None
@@ -43,7 +57,6 @@ def carica_json(file_path, default_val):
         try:
             with open(file_path, "r", encoding="utf-8") as f:
                 dati = json.load(f)
-                # Conversione difensiva: se ci aspettiamo un dict ma troviamo una lista (vecchio formato), la mappiamo
                 if isinstance(default_val, dict) and isinstance(dati, list):
                     return {"Ospite": dati}
                 if isinstance(dati, type(default_val)):
@@ -106,10 +119,6 @@ st.title("Split & Save AI 💡 <span class='badge-nodo'>4 Nodi Multi-Thread Atti
 st.write("Direttore finanziario potenziato con architettura a 4 nodi di ricerca e velocità.")
 
 # --- GESTIONE STATO UTENTE E LOGIN PERSISTENTE ---
-if "is_loggato" not in st.session_state:
-    st.session_state.is_loggato = False
-if "utente_email" not in st.session_state:
-    st.session_state.utente_email = "Ospite"
 if "notifiche_attive" not in st.session_state:
     st.session_state.notifiche_attive = False
 
@@ -138,6 +147,7 @@ if not st.session_state.is_loggato or st.session_state.utente_email == "Ospite":
                         salva_json(FILE_UTENTI, archivio_utenti)
                         st.session_state.is_loggato = True
                         st.session_state.utente_email = user_clean
+                        st.query_params["utente"] = user_clean
                         st.success("Account registrato e accesso effettuato!")
                         st.rerun()
                 else:
@@ -149,6 +159,7 @@ if not st.session_state.is_loggato or st.session_state.utente_email == "Ospite":
                     if user_clean in archivio_utenti and archivio_utenti[user_clean] == input_pass.strip():
                         st.session_state.is_loggato = True
                         st.session_state.utente_email = user_clean
+                        st.query_params["utente"] = user_clean
                         st.success("Accesso effettuato!")
                         st.rerun()
                     else:
@@ -158,6 +169,8 @@ if not st.session_state.is_loggato or st.session_state.utente_email == "Ospite":
     else:
         st.session_state.is_loggato = True
         st.session_state.utente_email = "Ospite"
+        if "utente" in st.query_params:
+            del st.query_params["utente"]
         st.sidebar.info("🔓 **Modalità Ospite attiva**.")
 else:
     st.sidebar.success(f"Benvenuto, **{st.session_state.utente_email}**! 🔒")
@@ -167,6 +180,8 @@ else:
     if st.sidebar.button("🚪 Esci (Logout)"):
         st.session_state.is_loggato = False
         st.session_state.utente_email = "Ospite"
+        if "utente" in st.query_params:
+            del st.query_params["utente"]
         st.rerun()
 
 st.sidebar.markdown("---")
