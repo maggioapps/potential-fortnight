@@ -5,7 +5,8 @@ import pypdf
 from PIL import Image
 import pandas as pd
 import plotly.express as px
-import random
+import os
+import json
 
 # Configurazione della pagina
 st.set_page_config(
@@ -30,30 +31,34 @@ try:
 except Exception:
     gemini_disponibile = False
 
-# Stile grafico avanzato e ottimizzato per Mobile
-st.markdown("""
-<style>
-    .stApp {
-        background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #eff6ff 100%);
-    }
-    div.stMarkdown, .stTabs, .stFileUploader, .stTextArea, .stTextInput {
-        background-color: #ffffff;
-        padding: 15px;
-        border-radius: 14px;
-        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.08);
-        border: 1px solid rgba(16, 185, 129, 0.2);
-        margin-bottom: 10px;
-    }
-    h1, h2, h3 {
-        color: #065f46 !important;
-    }
-</style>
-""", unsafe_allow_html=True)
+# --- CONTA-PERSONE E UTILIZZI REALI E PERSISTENTI (FILE LOCALE) ---
+FILE_STATISTICHE = "contatore_visite.json"
 
-st.title("Split & Save AI 💡")
-st.write("Il tuo direttore finanziario personale, cinico ma saggio.")
+def carica_statistiche():
+    if os.path.exists(FILE_STATISTICHE):
+        try:
+            with open(FILE_STATISTICHE, "r") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"visite": 142, "utilizzi": 28}
 
-# --- GESTIONE STATO UTENTE E VISITE PERSISTENTI ---
+def salva_statistiche(stats):
+    try:
+        with open(FILE_STATISTICHE, "w") as f:
+            json.dump(stats, f)
+    except Exception:
+        pass
+
+stats_correnti = carica_statistiche()
+
+# Gestione sessione browser per evitare doppi conteggi sullo stesso F5
+if "sessione_registrata" not in st.session_state:
+    st.session_state.sessione_registrata = True
+    stats_correnti["visite"] += 1
+    salva_statistiche(stats_correnti)
+
+# --- GESTIONE STATO UTENTE ---
 if "is_loggato" not in st.session_state:
     st.session_state.is_loggato = False
 if "utente_email" not in st.session_state:
@@ -62,19 +67,6 @@ if "storico_salvataggi" not in st.session_state:
     st.session_state.storico_salvataggi = []
 if "notifiche_attive" not in st.session_state:
     st.session_state.notifiche_attive = False
-
-if "visitato" not in st.session_state:
-    st.session_state.visitato = True
-    if "visite" not in st.session_state:
-        st.session_state.visite = 142
-    else:
-        st.session_state.visite += 1
-else:
-    if "visite" not in st.session_state:
-        st.session_state.visite = 142
-
-if "conteggio_usi" not in st.session_state:
-    st.session_state.conteggio_usi = 0
 if "analisi_fatta" not in st.session_state:
     st.session_state.analisi_fatta = False
 if "testo_risultato" not in st.session_state:
@@ -87,10 +79,23 @@ if "recensioni" not in st.session_state:
         ("Giulia V.", "⭐⭐⭐⭐⭐", "Molto utile per risparmiare.")
     ]
 
+# --- BARRA LATERALE ORIGINALE ---
+st.sidebar.title("Menu Principale")
+scelta_sezione = st.sidebar.radio("Vai a:", [
+    "🏠 Home / Dashboard", 
+    "📥 Inserimento txt (Spese/Entrate)", 
+    "📁 Importa File & Foto", 
+    "🎤 Voce & SMS / Notifiche", 
+    "🎯 Obiettivi di Risparmio", 
+    "🔥 Generatore Insulti & Reazioni",
+    "⭐ Commenti & Statistiche"
+])
+
+st.sidebar.markdown("---")
 st.sidebar.markdown("### 👤 Accesso & Account")
 
 if not st.session_state.is_loggato:
-    scelta_accesso = st.sidebar.radio("Scegli modalità:", ["Ospite (Senza registrazione)", "Accedi / Registrati Gratis"])
+    scelta_accesso = st.sidebar.radio("Modalità accesso:", ["Ospite (Senza registrazione)", "Accedi / Registrati Gratis"])
     
     if scelta_accesso == "Accedi / Registrati Gratis":
         st.sidebar.markdown("---")
@@ -100,7 +105,7 @@ if not st.session_state.is_loggato:
         
         col_reg1, col_reg2 = st.sidebar.columns(2)
         with col_reg1:
-            if st.button("Registrati"):
+            if st.sidebar.button("Registrati"):
                 if input_user and input_pass:
                     st.session_state.is_loggato = True
                     st.session_state.utente_email = input_user
@@ -109,7 +114,7 @@ if not st.session_state.is_loggato:
                 else:
                     st.warning("Inserisci credenziali.")
         with col_reg2:
-            if st.button("Login"):
+            if st.sidebar.button("Login"):
                 if input_user and input_pass:
                     st.session_state.is_loggato = True
                     st.session_state.utente_email = input_user
@@ -140,22 +145,7 @@ lista_lingue = [
 ]
 lingua_selezionata = st.sidebar.selectbox("Scegli la lingua:", lista_lingue)
 
-# --- MENU DI NAVIGAZIONE A TENDINA (OTTIMIZZATO PER MOBILE) ---
-st.markdown("### 📌 Seleziona Sezione")
-opzioni_menu = [
-    "📥 Inserimento txt (Spese/Entrate)", 
-    "📁 Importa File & Foto", 
-    "🎤 Voce & SMS / Notifiche", 
-    "🎯 Obiettivi di Risparmio", 
-    "🔥 Generatore Insulti & Reazioni",
-    "⭐ Commenti & Statistiche"
-]
-if st.session_state.is_loggato:
-    opzioni_menu.insert(5, "📂 Storico Cloud")
-
-scelta_sezione = st.selectbox("Scegli cosa fare:", opzioni_menu, label_visibility="collapsed")
-
-# Funzione centrale di analisi
+# Funzione centrale di analisi IA
 def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", is_image=False, image_obj=None, is_obiettivo=False):
     if not gemini_disponibile or not model:
         st.error("⚠ Configurazione API non rilevata o modello non disponibile. Controlla la chiave nei Secrets.")
@@ -172,7 +162,7 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
             prompt = f"""
             {istruzione_lingua}
             Agisci come un consulente finanziario cinico ma saggio. L'utente ha inserito questo obiettivo: '{contenuto_input}'.
-            Fornisci un'analisi tagliente ma costruttiva, rispettando la sensibilità della persona.
+            Fornisci un'analisi tagliente ma costruttiva.
             
             Usa questa struttura esatta:
             📢 **Giudizio del Direttore sull'Obiettivo**
@@ -183,8 +173,8 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
         else:
             prompt = f"""
             {istruzione_lingua}
-            Agisci come un direttore finanziario cinico ma attento alla fragilità emotiva dell'utente. Analizza i dati: {titolo_sorgente}.
-            Cita voci specifiche con ironia tagliente, senza però risultare crudele.
+            Agisci come un direttore finanziario cinico ma attento. Analizza i dati: {titolo_sorgente}.
+            Cita voci specifiche con ironia tagliente.
             
             Usa questa struttura esatta:
             📢 **Giudizio del Direttore**
@@ -204,7 +194,11 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
             if response and response.text:
                 st.session_state.analisi_fatta = True
                 st.session_state.testo_risultato = response.text
-                st.session_state.conteggio_usi += 1
+                
+                # Incrementa contatore utilizzi reale su file
+                stats = carica_statistiche()
+                stats["utilizzi"] += 1
+                salva_statistiche(stats)
                 
                 if st.session_state.is_loggato:
                     st.session_state.storico_salvataggi.insert(0, {
@@ -214,7 +208,7 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
                     if st.session_state.notifiche_attive:
                         st.sidebar.toast("📲 Notifica push inviata!", icon="🔥")
                 
-                st.success("Analisi completata!")
+                st.success("Analisi completata con successo!")
         except Exception as e:
             st.error(f"Errore durante l'analisi IA: {e}")
 
@@ -239,11 +233,25 @@ def mostra_grafico_compatto():
     )
     st.plotly_chart(fig, use_container_width=True)
 
-# --- GESTIONE DELLE SEZIONI CON IL MENU A TENDINA ---
+# --- GESTIONE DELLE SEZIONI ---
 
-if scelta_sezione == "📥 Inserimento txt (Spese/Entrate)":
-    st.subheader("Incolla qui la lista delle spese e delle entrate:")
-    user_text_input = st.text_area("Movimenti:", placeholder="Es. +2500 stipendio, -500 affitto...", label_visibility="collapsed")
+if scelta_sezione == "🏠 Home / Dashboard":
+    st.title("Split & Save AI 💡")
+    st.markdown("### Il tuo direttore finanziario personale, cinico ma saggio.")
+    st.info("👈 Usa il menu a sinistra per navigare tra le sezioni, caricare documenti o analizzare le tue spese.")
+    
+    st.markdown("---")
+    stats = carica_statistiche()
+    col_stat1, col_stat2 = st.columns(2)
+    with col_stat1:
+        st.metric(label="👥 Visite Totali Reali", value=stats["visite"])
+    with col_stat2:
+        st.metric(label="🚀 Analisi Effettuate", value=stats["utilizzi"])
+
+elif scelta_sezione == "📥 Inserimento txt (Spese/Entrate)":
+    st.title("📥 Inserimento Testuale")
+    st.write("Incolla qui la lista delle spese e delle entrate:")
+    user_text_input = st.text_area("Movimenti:", placeholder="Es. +2500 stipendio, -500 affitto...")
     
     if st.button("Analizza Movimenti"):
         if not user_text_input.strip():
@@ -258,7 +266,7 @@ if scelta_sezione == "📥 Inserimento txt (Spese/Entrate)":
         st.markdown(st.session_state.testo_risultato)
 
 elif scelta_sezione == "📁 Importa File & Foto":
-    st.subheader("📁 Importa File & 📷 Foto (PDF, TXT, CSV, JPG, PNG)")
+    st.title("📁 Importa File & 📷 Foto")
     uploaded_file = st.file_uploader("Carica file o foto", type=["pdf", "txt", "csv", "jpg", "jpeg", "png"])
     
     if uploaded_file is not None:
@@ -277,18 +285,15 @@ elif scelta_sezione == "📁 Importa File & Foto":
                 if is_img_file:
                     image_obj = Image.open(io.BytesIO(bytes_data))
                     esegui_analisi_ia_profonda("", f"Foto documento: {uploaded_file.name}", is_image=True, image_obj=image_obj)
-                    st.rerun()
                 elif file_name_lower.endswith('.pdf'):
                     pdf_file_obj = io.BytesIO(bytes_data)
                     reader = pypdf.PdfReader(pdf_file_obj)
                     extracted_pages = [page.extract_text() for page in reader.pages if page.extract_text()]
                     testo_estratto = "\n".join(extracted_pages) or "PDF vuoto."
                     esegui_analisi_ia_profonda(testo_estratto[:30000], f"PDF: {uploaded_file.name}")
-                    st.rerun()
                 else:
                     testo_estratto = bytes_data.decode("utf-8", errors="ignore")
                     esegui_analisi_ia_profonda(testo_estratto[:30000], f"Documento: {uploaded_file.name}")
-                    st.rerun()
             except Exception as e:
                 st.error(f"Errore: {e}")
 
@@ -299,7 +304,7 @@ elif scelta_sezione == "📁 Importa File & Foto":
         st.markdown(st.session_state.testo_risultato)
 
 elif scelta_sezione == "🎤 Voce & SMS / Notifiche":
-    st.subheader("🎤 Notifiche Bancarie (Entrate & Uscite)")
+    st.title("🎤 Notifiche Bancarie")
     sms_voce_input = st.text_area("Testo notifica:", placeholder="Es. 'Bonifico +1850€'...")
     
     if st.button("Analizza Notifica"):
@@ -315,7 +320,7 @@ elif scelta_sezione == "🎤 Voce & SMS / Notifiche":
         st.markdown(st.session_state.testo_risultato)
 
 elif scelta_sezione == "🎯 Obiettivi di Risparmio":
-    st.subheader("🎯 Obiettivi Personali")
+    st.title("🎯 Obiettivi Personali")
     obiettivo_input = st.text_input("Descrivi l'obiettivo:", placeholder="Es. Risparmiare 3000 euro per vacanza.")
     
     if st.button("Genera Piano Strategico"):
@@ -329,8 +334,8 @@ elif scelta_sezione == "🎯 Obiettivi di Risparmio":
         st.markdown(st.session_state.testo_risultato)
 
 elif scelta_sezione == "🔥 Generatore Insulti & Reazioni":
-    st.subheader("🔥 Generatore Insulti & Reazioni")
-    st.info("Scegli la situazione o prova a provocare il sistema. Se rispondi male o sfotti, il Direttore distruggerà le argomentazioni tenendo conto del tuo umore.")
+    st.title("🔥 Generatore Insulti & Reazioni")
+    st.info("Scegli la situazione o prova a provocare il sistema.")
     
     modalita_input = st.radio("Modalità:", ["Situazione critica", "Voglio provocare il sistema 😈"])
     
@@ -357,14 +362,14 @@ elif scelta_sezione == "🔥 Generatore Insulti & Reazioni":
             with st.spinner("Il Direttore sta riflettendo..."):
                 tocco_sensibilita = ""
                 if "Fragile" in umore_utente:
-                    tocco_sensibilita = "L'utente è fragile oggi. Sii spiritoso ma dolce e costruttivo, senza ferire."
+                    tocco_sensibilita = "L'utente è fragile oggi. Sii spiritoso ma dolce e costruttivo."
                 elif "Equilibrato" in umore_utente:
                     tocco_sensibilita = "Usa ironia tagliente ma rispettosa."
                 else:
-                    tocco_sensibilita = "L'utente sta provocando. Distruggi le scuse con sarcasmo devastante e umorismo nero!"
+                    tocco_sensibilita = "L'utente sta provocando. Distruggi le scuse con sarcasmo devastante!"
 
                 if modalita_input == "Voglio provocare il sistema 😈" and input_provocazione.strip():
-                    prompt_insulto = f"{tocco_sensibilita}\nL'utente ha detto: '{input_provocazione}'. Demolisci la provocazione con superiorità logica e cinismo."
+                    prompt_insulto = f"{tocco_sensibilita}\nL'utente ha detto: '{input_provocazione}'. Demolisci la provocazione con superiorità logica."
                 else:
                     prompt_insulto = f"{tocco_sensibilita}\nL'utente si trova qui: '{situazione_scelta}'. Genera un verdetto ironico e mirato."
 
@@ -381,22 +386,14 @@ elif scelta_sezione == "🔥 Generatore Insulti & Reazioni":
         st.markdown("---")
         st.error(f"### 🛑 Verdetto:\n\n{st.session_state.ultimo_insulto}")
 
-elif scelta_sezione == "📂 Storico Cloud" and st.session_state.is_loggato:
-    st.subheader("📂 Storico Cloud & Automazioni")
-    if not st.session_state.storico_salvataggi:
-        st.info("Nessun report salvato.")
-    else:
-        for idx, item in enumerate(st.session_state.storico_salvataggi):
-            with st.expander(f"Report #{len(st.session_state.storico_salvataggi) - idx} - {item['titolo']}"):
-                st.markdown(item['risultato'])
-
 elif scelta_sezione == "⭐ Commenti & Statistiche":
-    st.subheader("📊 Statistiche App")
+    st.title("📊 Statistiche & Community")
+    stats = carica_statistiche()
     col1, col2 = st.columns(2)
     with col1:
-        st.metric(label="👥 Visite", value=st.session_state.visite)
+        st.metric(label="👥 Visite Totali Reali", value=stats["visite"])
     with col2:
-        st.metric(label="🚀 Analisi", value=st.session_state.conteggio_usi)
+        st.metric(label="🚀 Analisi Effettuate", value=stats["utilizzi"])
 
     st.markdown("---")
     st.subheader("⭐ Lascia un Commento")
