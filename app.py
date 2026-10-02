@@ -32,16 +32,19 @@ try:
 except Exception:
     gemini_disponibile = False
 
-# --- FILE PERSISTENTI PER STATISTICHE E STORICO UTENTI ---
+# --- FILE PERSISTENTI PER ACCOUNT, STATISTICHE E STORICO ---
 FILE_STATISTICHE = "contatore_visite.json"
 FILE_STORICO_UTENTE = "storico_analisi.json"
 FILE_OBIETTIVI = "obiettivi_utente.json"
+FILE_UTENTI = "utenti_registrati.json"
 
 def carica_json(file_path, default_val):
     if os.path.exists(file_path):
         try:
             with open(file_path, "r", encoding="utf-8") as f:
-                return json.load(f)
+                dati = json.load(f)
+                if isinstance(dati, type(default_val)):
+                    return dati
         except Exception:
             pass
     return default_val
@@ -99,7 +102,7 @@ st.markdown("""
 st.title("Split & Save AI 💡 <span class='badge-nodo'>4 Nodi Multi-Thread Attivi</span>")
 st.write("Direttore finanziario potenziato con architettura a 4 nodi di ricerca e velocità.")
 
-# --- GESTIONE STATO UTENTE E LOGIN ---
+# --- GESTIONE STATO UTENTE E LOGIN PERSISTENTE ---
 if "is_loggato" not in st.session_state:
     st.session_state.is_loggato = False
 if "utente_email" not in st.session_state:
@@ -108,6 +111,8 @@ if "notifiche_attive" not in st.session_state:
     st.session_state.notifiche_attive = False
 
 st.sidebar.markdown("### 👤 Accesso & Account")
+
+archivio_utenti = carica_json(FILE_UTENTI, {})
 
 if not st.session_state.is_loggato or st.session_state.utente_email == "Ospite":
     scelta_accesso = st.sidebar.radio("Scegli modalità:", ["Ospite (Senza registrazione)", "Accedi / Registrati Gratis"])
@@ -122,21 +127,31 @@ if not st.session_state.is_loggato or st.session_state.utente_email == "Ospite":
         with col_reg1:
             if st.button("Registrati"):
                 if input_user and input_pass:
-                    st.session_state.is_loggato = True
-                    st.session_state.utente_email = input_user.strip()
-                    st.success("Account creato!")
-                    st.rerun()
+                    user_clean = input_user.strip()
+                    if user_clean in archivio_utenti:
+                        st.sidebar.error("Utente già esistente! Fai il login.")
+                    else:
+                        archivio_utenti[user_clean] = input_pass.strip()
+                        salva_json(FILE_UTENTI, archivio_utenti)
+                        st.session_state.is_loggato = True
+                        st.session_state.utente_email = user_clean
+                        st.success("Account registrato e accesso effettuato!")
+                        st.rerun()
                 else:
-                    st.warning("Inserisci credenziali.")
+                    st.sidebar.warning("Inserisci credenziali valide.")
         with col_reg2:
             if st.button("Login"):
                 if input_user and input_pass:
-                    st.session_state.is_loggato = True
-                    st.session_state.utente_email = input_user.strip()
-                    st.success("Accesso effettuato!")
-                    st.rerun()
+                    user_clean = input_user.strip()
+                    if user_clean in archivio_utenti and archivio_utenti[user_clean] == input_pass.strip():
+                        st.session_state.is_loggato = True
+                        st.session_state.utente_email = user_clean
+                        st.success("Accesso effettuato!")
+                        st.rerun()
+                    else:
+                        st.sidebar.error("Credenziali errate o utente non trovato.")
                 else:
-                    st.warning("Inserisci credenziali.")
+                    st.sidebar.warning("Inserisci credenziali.")
     else:
         st.session_state.is_loggato = True
         st.session_state.utente_email = "Ospite"
@@ -178,7 +193,7 @@ if "recensioni" not in st.session_state:
         ("Giulia V.", "⭐⭐⭐⭐⭐", "Analisi precisa e fulminea.")
     ]
 
-# Tab dell'applicazione (Inserita la scheda "🕒 Cronologia" al posto di SMS)
+# Tab dell'applicazione
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "📥 Inserimento txt", 
     "📁 Importa File & Foto", 
@@ -240,6 +255,9 @@ def esegui_analisi_multi_nodo(contenuto_input, titolo_sorgente="Dati utente", is
         salva_json(FILE_STATISTICHE, stats)
         
         archivio_totale = carica_json(FILE_STORICO_UTENTE, {})
+        if not isinstance(archivio_totale, dict):
+            archivio_totale = {}
+            
         utente_corrente = st.session_state.utente_email
         if utente_corrente not in archivio_totale:
             archivio_totale[utente_corrente] = []
@@ -367,6 +385,8 @@ with tab3:
     st.info(f"🔒 Questa è la cronologia completa delle analisi associate unicamente all'account: **{st.session_state.utente_email}**")
     
     archivio_totale = carica_json(FILE_STORICO_UTENTE, {})
+    if not isinstance(archivio_totale, dict):
+        archivio_totale = {}
     cronologia_utente = archivio_totale.get(st.session_state.utente_email, [])
     
     if not cronologia_utente:
@@ -378,14 +398,16 @@ with tab3:
             st.rerun()
             
         for idx, item in enumerate(cronologia_utente):
-            with st.expander(f"Analisi #{len(cronologia_utente) - idx} - {item['titolo']}"):
-                st.markdown(item['risultato'])
-                st.download_button("📥 Scarica Report Analisi", data=item['risultato'], file_name=f"cronologia_report_{idx}.txt", key=f"dl_cron_{idx}")
+            with st.expander(f"Analisi #{len(cronologia_utente) - idx} - {item.get('titolo', 'Analisi')}"):
+                st.markdown(item.get('risultato', ''))
+                st.download_button("📥 Scarica Report Analisi", data=item.get('risultato', ''), file_name=f"cronologia_report_{idx}.txt", key=f"dl_cron_{idx}")
 
 with tab4:
     st.subheader("🎯 Obiettivi di Risparmio & Import/Export")
     
     archivio_obiettivi = carica_json(FILE_OBIETTIVI, {})
+    if not isinstance(archivio_obiettivi, dict):
+        archivio_obiettivi = {}
     obiettivi_utente = archivio_obiettivi.get(st.session_state.utente_email, [])
     
     obiettivo_input = st.text_input("Descrivi il tuo obiettivo:", placeholder="Es. Vorrei risparmiare 5000 euro.", key="obj_input")
@@ -431,6 +453,8 @@ with tab5:
     st.subheader("📂 Storico Salvato (Globale Account)")
     st.info(f"Visualizzazione storico per l'utente loggato: **{st.session_state.utente_email}**")
     archivio_totale = carica_json(FILE_STORICO_UTENTE, {})
+    if not isinstance(archivio_totale, dict):
+        archivio_totale = {}
     storico_privato = archivio_totale.get(st.session_state.utente_email, [])
     
     if not storico_privato:
@@ -442,17 +466,17 @@ with tab5:
             st.rerun()
             
         for idx, item in enumerate(storico_privato):
-            with st.expander(f"Analisi #{len(storico_privato) - idx} - {item['titolo']}"):
-                st.markdown(item['risultato'])
+            with st.expander(f"Analisi #{len(storico_privato) - idx} - {item.get('titolo', 'Analisi')}"):
+                st.markdown(item.get('risultato', ''))
 
 with tab6:
     st.subheader("📊 Statistiche e Community")
     stats_file = carica_json(FILE_STATISTICHE, {"visite": 142, "utilizzi": 28})
     col_stat1, col_stat2 = st.columns(2)
     with col_stat1:
-        st.metric(label="👥 Persone passate", value=stats_file["visite"])
+        st.metric(label="👥 Persone passate", value=stats_file.get("visite", 0))
     with col_stat2:
-        st.metric(label="🚀 Analisi effettuate", value=stats_file["utilizzi"])
+        st.metric(label="🚀 Analisi effettuate", value=stats_file.get("utilizzi", 0))
 
     st.markdown("---")
     st.subheader("⭐ Lascia un Commento")
