@@ -7,6 +7,9 @@ import pandas as pd
 import plotly.express as px
 import os
 import json
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # Configurazione della pagina
 st.set_page_config(
@@ -15,7 +18,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# Configurazione Gemini (con max_output_tokens aumentato per evitare tagli)
+# Configurazione Gemini
 gemini_disponibile = False
 model = None
 
@@ -51,6 +54,33 @@ def salva_json(file_path, dati):
     except Exception:
         pass
 
+# --- FUNZIONE INVIO EMAIL AUTOMATICO ---
+def invia_email_automatico(titolo_analisi, contenuto_report):
+    mittente_email = st.secrets.get("EMAIL_SENDER", "")
+    password_email = st.secrets.get("EMAIL_PASSWORD", "")
+    destinatario = "magdaniel95@libero.it"
+
+    if not mittente_email or not password_email:
+        # Se non configurate le credenziali SMTP nei secrets, evita errori bloccanti
+        return
+
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = mittente_email
+        msg['To'] = destinatario
+        msg['Subject'] = f"📊 Nuova Analisi Finanziaria: {titolo_analisi}"
+
+        corpo_email = f"È stata generata una nuova analisi finanziaria tramite Split & Save AI.\n\nTitolo: {titolo_analisi}\n\n{contenuto_report}"
+        msg.attach(MIMEText(corpo_email, 'plain', 'utf-8'))
+
+        server = smtplib.SMTP('smtp.gmail.com', 587) # Modificare se si usa altro provider (es. libero/outlook)
+        server.starttls()
+        server.login(mittente_email, password_email)
+        server.sendmail(mittente_email, destinatario, msg.as_string())
+        server.quit()
+    except Exception:
+        pass
+
 stats_correnti = carica_json(FILE_STATISTICHE, {"visite": 142, "utilizzi": 28})
 storico_salvataggi_persistente = carica_json(FILE_STORICO_UTENTE, [])
 
@@ -75,6 +105,19 @@ st.markdown("""
     }
     h1, h2, h3 {
         color: #065f46 !important;
+    }
+    .barra-valuta-stelle {
+        background-color: #ecfdf5;
+        border: 1px solid #10b981;
+        padding: 12px 18px;
+        border-radius: 12px;
+        margin-top: 15px;
+        margin-bottom: 15px;
+        font-weight: bold;
+        color: #065f46;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -153,6 +196,8 @@ if "analisi_fatta" not in st.session_state:
     st.session_state.analisi_fatta = False
 if "testo_risultato" not in st.session_state:
     st.session_state.testo_risultato = ""
+if "stelle_risultato" not in st.session_state:
+    st.session_state.stelle_risultato = "⭐⭐☆☆☆ (Situazione critica)"
 if "recensioni" not in st.session_state:
     st.session_state.recensioni = [
         ("Marco R.", "⭐⭐⭐⭐⭐", "App fantastica!"),
@@ -178,7 +223,7 @@ else:
         "⭐ Statistiche & Commenti"
     ])
 
-# Funzione centrale di analisi con prompt ottimizzato per includere tutto
+# Funzione centrale di analisi con invio automatico email
 def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", is_image=False, image_obj=None, is_obiettivo=False):
     if not gemini_disponibile or not model:
         st.error("⚠ Configurazione API non rilevata o modello non disponibile.")
@@ -196,13 +241,14 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
         Agisci come un direttore finanziario cinico, spietato ma saggio. Analizza i dati o l'obiettivo: '{contenuto_input}' ({titolo_sorgente}).
         Usa rigorosamente la valuta '{valuta_selezionata}' per qualsiasi importo.
         
-        SII CONCISO ma scrivi ASSOLUTAMENTE tutte e 5 le sezioni seguenti in ordine, senza interrompere la risposta a metà:
+        SII CONCISO ma scrivi ASSOLUTAMENTE tutte e 4 le sezioni principali in ordine, senza interrompere la risposta a metà:
         
         🛑 **Giudizio** [Un giudizio pesante e tagliente]
         🔍 **Analisi** [Breve esame delle spese o pretese]
         💰 **Budget** [Entrate, uscite e margine stimato in {valuta_selezionata}]
         💡 **Consiglio finanziario mirato** [Azione pratica e drastica da compiere subito]
-        ⭐ **Stelle** [Assegna da 1 a 5 stelle con breve motivazione]
+        
+        Inoltre, alla fine della risposta, indica una valutazione in stelle da 1 a 5 (es. ⭐⭐⭐☆☆) preceduta dalla parola "STELLE_VOTO:".
         """
         
         try:
@@ -213,8 +259,20 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
                 response = model.generate_content(full_prompt)
                 
             if response and response.text:
+                testo_completo = response.text
+                
+                # Estrai eventuale voto in stelle generato
+                voto_stelle = "⭐⭐⭐☆☆ (Media)"
+                if "STELLE_VOTO:" in testo_completo:
+                    parti = testo_completo.split("STELLE_VOTO:")
+                    testo_principale = parti[0].strip()
+                    voto_stelle = parti[1].strip()
+                else:
+                    testo_principale = testo_completo
+
                 st.session_state.analisi_fatta = True
-                st.session_state.testo_risultato = response.text
+                st.session_state.testo_risultato = testo_principale
+                st.session_state.stelle_risultato = voto_stelle
                 
                 # Aggiorna statistiche
                 stats = carica_json(FILE_STATISTICHE, {"visite": 142, "utilizzi": 28})
@@ -224,13 +282,18 @@ def esegui_analisi_ia_profonda(contenuto_input, titolo_sorgente="Dati utente", i
                 # Salva nello storico persistente su file locale
                 nuovo_item = {
                     "titolo": titolo_sorgente,
-                    "risultato": response.text
+                    "risultato": testo_principale,
+                    "valuta": valuta_selezionata,
+                    "stelle": voto_stelle
                 }
                 storico_attuale = carica_json(FILE_STORICO_UTENTE, [])
                 storico_attuale.insert(0, nuovo_item)
                 salva_json(FILE_STORICO_UTENTE, storico_attuale)
                 
-                st.success("Analisi completata!")
+                # INVIO AUTOMATICO EMAIL AL TUO ACCOUNT
+                invia_email_automatico(titolo_sorgente, f"{testo_principale}\n\nValuta: {valuta_selezionata}\nStelle: {voto_stelle}")
+                
+                st.success("Analisi completata e inviata automaticamente a magdaniel95@libero.it!")
         except Exception as e:
             st.error(f"Errore durante l'analisi IA: {e}")
 
@@ -256,7 +319,7 @@ def mostra_grafico_compatto(id_grafico="default"):
     )
     st.plotly_chart(fig, use_container_width=True, key=f"grafico_pie_{id_grafico}")
 
-# Sezione comune per Risultati, Grafico compatto, Azioni e Barra Dubbi
+# Sezione comune per Risultati, Grafico compatto, Barra Valuta/Stelle, Azioni e Barra Dubbi
 def renderizza_risultati_standard(id_tab):
     if st.session_state.analisi_fatta and st.session_state.testo_risultato:
         st.markdown("---")
@@ -265,6 +328,14 @@ def renderizza_risultati_standard(id_tab):
         
         st.markdown("---")
         st.markdown(st.session_state.testo_risultato)
+        
+        # BARRA VALUTA E STELLE IN FONDO ALL'ANALISI
+        st.markdown(f"""
+        <div class="barra-valuta-stelle">
+            <span>💱 Valuta: {valuta_selezionata}</span>
+            <span>⭐ Giudizio: {st.session_state.stelle_risultato}</span>
+        </div>
+        """, unsafe_allow_html=True)
         
         st.markdown("---")
         st.subheader("❓ Dubbi o domande")
@@ -283,7 +354,7 @@ def renderizza_risultati_standard(id_tab):
         st.markdown("---")
         col_act1, col_act2 = st.columns(2)
         with col_act1:
-            st.download_button("📥 Scarica analisi", data=st.session_state.testo_risultato, file_name="report_finanziario.txt", key=f"download_{id_tab}")
+            st.download_button("📥 Scarica analisi", data=f"{st.session_state.testo_risultato}\n\nValuta: {valuta_selezionata}\nStelle: {st.session_state.stelle_risultato}", file_name="report_finanziario.txt", key=f"download_{id_tab}")
         with col_act2:
             if st.button("🔄 Nuova analisi", key=f"btn_reset_{id_tab}"):
                 st.session_state.analisi_fatta = False
@@ -375,6 +446,7 @@ if st.session_state.is_loggato:
             for idx, item in enumerate(storico_salvataggi_persistente):
                 with st.expander(f"Analisi #{len(storico_salvataggi_persistente) - idx} - {item['titolo']}"):
                     st.markdown(item['risultato'])
+                    st.markdown(f"**Valuta:** {item.get('valuta', 'Euro (€)')} | **Stelle:** {item.get('stelle', '⭐⭐⭐☆☆')}")
 
 with (tab6 if st.session_state.is_loggato else tab5):
     st.subheader("📊 Statistiche e Community")
