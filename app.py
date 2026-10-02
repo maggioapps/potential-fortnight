@@ -52,7 +52,7 @@ def salva_statistiche(stats):
 
 stats_correnti = carica_statistiche()
 
-# Gestione sessione browser per evitare doppi conteggi sullo stesso F5
+# Registra visita unica per sessione browser
 if "sessione_registrata" not in st.session_state:
     st.session_state.sessione_registrata = True
     stats_correnti["visite"] += 1
@@ -238,20 +238,19 @@ def mostra_grafico_compatto():
 if scelta_sezione == "🏠 Home / Dashboard":
     st.title("Split & Save AI 💡")
     st.markdown("### Il tuo direttore finanziario personale, cinico ma saggio.")
-    st.info("👈 Usa il menu a sinistra per navigare tra le sezioni, caricare documenti o analizzare le tue spese.")
+    st.info("👈 Seleziona una sezione dal menu a sinistra per iniziare a gestire le tue spese, importare documenti o impostare i tuoi obiettivi.")
     
     st.markdown("---")
     stats = carica_statistiche()
     col_stat1, col_stat2 = st.columns(2)
     with col_stat1:
-        st.metric(label="👥 Visite Totali Reali", value=stats["visite"])
+        st.metric(label="👥 Visite Totali", value=stats["visite"])
     with col_stat2:
         st.metric(label="🚀 Analisi Effettuate", value=stats["utilizzi"])
 
 elif scelta_sezione == "📥 Inserimento txt (Spese/Entrate)":
     st.title("📥 Inserimento Testuale")
-    st.write("Incolla qui la lista delle spese e delle entrate:")
-    user_text_input = st.text_area("Movimenti:", placeholder="Es. +2500 stipendio, -500 affitto...")
+    user_text_input = st.text_area("Incolla qui la lista delle spese e delle entrate:", placeholder="Es. +2500 stipendio, -500 affitto...")
     
     if st.button("Analizza Movimenti"):
         if not user_text_input.strip():
@@ -267,7 +266,7 @@ elif scelta_sezione == "📥 Inserimento txt (Spese/Entrate)":
 
 elif scelta_sezione == "📁 Importa File & Foto":
     st.title("📁 Importa File & 📷 Foto")
-    uploaded_file = st.file_uploader("Carica file o foto", type=["pdf", "txt", "csv", "jpg", "jpeg", "png"])
+    uploaded_file = st.file_uploader("Carica file o foto (PDF, TXT, CSV, JPG, PNG)", type=["pdf", "txt", "csv", "jpg", "jpeg", "png"])
     
     if uploaded_file is not None:
         file_name_lower = uploaded_file.name.lower()
@@ -305,7 +304,7 @@ elif scelta_sezione == "📁 Importa File & Foto":
 
 elif scelta_sezione == "🎤 Voce & SMS / Notifiche":
     st.title("🎤 Notifiche Bancarie")
-    sms_voce_input = st.text_area("Testo notifica:", placeholder="Es. 'Bonifico +1850€'...")
+    sms_voce_input = st.text_area("Inserisci testo notifica o SMS:", placeholder="Es. 'Bonifico +1850€'...")
     
     if st.button("Analizza Notifica"):
         if not sms_voce_input.strip():
@@ -321,7 +320,7 @@ elif scelta_sezione == "🎤 Voce & SMS / Notifiche":
 
 elif scelta_sezione == "🎯 Obiettivi di Risparmio":
     st.title("🎯 Obiettivi Personali")
-    obiettivo_input = st.text_input("Descrivi l'obiettivo:", placeholder="Es. Risparmiare 3000 euro per vacanza.")
+    obiettivo_input = st.text_input("Descrivi l'obiettivo di risparmio:", placeholder="Es. Risparmiare 3000 euro per vacanza.")
     
     if st.button("Genera Piano Strategico"):
         if not obiettivo_input.strip():
@@ -391,7 +390,7 @@ elif scelta_sezione == "⭐ Commenti & Statistiche":
     stats = carica_statistiche()
     col1, col2 = st.columns(2)
     with col1:
-        st.metric(label="👥 Visite Totali Reali", value=stats["visite"])
+        st.metric(label="👥 Visite Totali", value=stats["visite"])
     with col2:
         st.metric(label="🚀 Analisi Effettuate", value=stats["utilizzi"])
 
