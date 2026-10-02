@@ -16,7 +16,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# Configurazione Gemini con il nuovo Gemini 3.8 Flash ottimizzato per la velocità
+# Configurazione Gemini con Gemini 3.8 Flash ottimizzato per la velocità
 gemini_disponibile = False
 model = None
 
@@ -35,6 +35,7 @@ except Exception:
 # --- FILE PERSISTENTI PER STATISTICHE E STORICO UTENTI ---
 FILE_STATISTICHE = "contatore_visite.json"
 FILE_STORICO_UTENTE = "storico_analisi.json"
+FILE_OBIETTIVI = "obiettivi_utente.json"
 
 def carica_json(file_path, default_val):
     if os.path.exists(file_path):
@@ -53,7 +54,6 @@ def salva_json(file_path, dati):
         pass
 
 stats_correnti = carica_json(FILE_STATISTICHE, {"visite": 142, "utilizzi": 28})
-storico_salvataggi_persistente = carica_json(FILE_STORICO_UTENTE, [])
 
 if "sessione_registrata" not in st.session_state:
     st.session_state.sessione_registrata = True
@@ -103,13 +103,13 @@ st.write("Direttore finanziario potenziato con architettura a 4 nodi di ricerca 
 if "is_loggato" not in st.session_state:
     st.session_state.is_loggato = False
 if "utente_email" not in st.session_state:
-    st.session_state.utente_email = ""
+    st.session_state.utente_email = "Ospite"
 if "notifiche_attive" not in st.session_state:
     st.session_state.notifiche_attive = False
 
 st.sidebar.markdown("### 👤 Accesso & Account")
 
-if not st.session_state.is_loggato:
+if not st.session_state.is_loggato or st.session_state.utente_email == "Ospite":
     scelta_accesso = st.sidebar.radio("Scegli modalità:", ["Ospite (Senza registrazione)", "Accedi / Registrati Gratis"])
     
     if scelta_accesso == "Accedi / Registrati Gratis":
@@ -123,7 +123,7 @@ if not st.session_state.is_loggato:
             if st.button("Registrati"):
                 if input_user and input_pass:
                     st.session_state.is_loggato = True
-                    st.session_state.utente_email = input_user
+                    st.session_state.utente_email = input_user.strip()
                     st.success("Account creato!")
                     st.rerun()
                 else:
@@ -132,12 +132,14 @@ if not st.session_state.is_loggato:
             if st.button("Login"):
                 if input_user and input_pass:
                     st.session_state.is_loggato = True
-                    st.session_state.utente_email = input_user
+                    st.session_state.utente_email = input_user.strip()
                     st.success("Accesso effettuato!")
                     st.rerun()
                 else:
                     st.warning("Inserisci credenziali.")
     else:
+        st.session_state.is_loggato = True
+        st.session_state.utente_email = "Ospite"
         st.sidebar.info("🔓 **Modalità Ospite attiva**.")
 else:
     st.sidebar.success(f"Benvenuto, **{st.session_state.utente_email}**! 🔒")
@@ -146,7 +148,7 @@ else:
         
     if st.sidebar.button("🚪 Esci (Logout)"):
         st.session_state.is_loggato = False
-        st.session_state.utente_email = ""
+        st.session_state.utente_email = "Ospite"
         st.rerun()
 
 st.sidebar.markdown("---")
@@ -176,26 +178,16 @@ if "recensioni" not in st.session_state:
         ("Giulia V.", "⭐⭐⭐⭐⭐", "Analisi precisa e fulminea.")
     ]
 
-# Tab dell'applicazione
-if st.session_state.is_loggato:
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "📥 Inserimento txt", 
-        "📁 Importa File & Foto", 
-        "🎤 Voce & SMS", 
-        "🎯 Obiettivi", 
-        "📂 Storico Salvato",
-        "⭐ Statistiche & Commenti"
-    ])
-else:
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "📥 Inserimento txt", 
-        "📁 Importa File & Foto", 
-        "🎤 Voce & SMS", 
-        "🎯 Obiettivi", 
-        "⭐ Statistiche & Commenti"
-    ])
+# Tab dell'applicazione (Inserita la scheda "🕒 Cronologia" al posto di SMS)
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "📥 Inserimento txt", 
+    "📁 Importa File & Foto", 
+    "🕒 Cronologia", 
+    "🎯 Obiettivi", 
+    "📂 Storico Salvato",
+    "⭐ Statistiche & Commenti"
+])
 
-# Funzione eseguita tramite i 4 nodi paralleli (Thread pool)
 def worker_nodo(prompt_parziale):
     if not model:
         return ""
@@ -213,14 +205,12 @@ def esegui_analisi_multi_nodo(contenuto_input, titolo_sorgente="Dati utente", is
     with st.spinner("⚡ Distribuzione del carico sui 4 nodi di ricerca e velocità..."):
         istruzione_lingua = "" if lingua_selezionata == "Rilevamento Automatico (Auto)" else f"Rispondi in: {lingua_selezionata}."
         
-        # Suddividiamo il lavoro in 4 prompt paralleli (i 4 nodi)
         p1 = f"{istruzione_lingua} Agisci come direttore finanziario cinico. Analizza i dati: '{contenuto_input}'. Scrivi la sezione: 🛑 **Giudizio** pesante e tagliente in valuta {valuta_selezionata}."
         p2 = f"{istruzione_lingua} Agisci come analista economico. Esamina i flussi dei dati: '{contenuto_input}'. Scrivi la sezione: 🔍 **Analisi** dettagliata."
         p3 = f"{istruzione_lingua} Calcola entrate, uscite, margini e budget in valuta {valuta_selezionata} per: '{contenuto_input}'. Scrivi la sezione: 💰 **Budget**."
         p4 = f"{istruzione_lingua} Fornisci un'azione drastica immediata per: '{contenuto_input}'. Scrivi la sezione: 💡 **Consiglio finanziario mirato**."
 
         if is_image and image_obj is not None:
-            # Per le immagini usiamo direttamente il modello sul nodo principale ad alta velocità
             prompt_totale = f"{istruzione_lingua} Analizza l'immagine allegata con tono cinico e saggio usando la valuta {valuta_selezionata}. Scrivi: 🛑 **Giudizio**, 🔍 **Analisi**, 💰 **Budget**, 💡 **Consiglio finanziario mirato**."
             try:
                 response = model.generate_content([prompt_totale, image_obj])
@@ -228,7 +218,6 @@ def esegui_analisi_multi_nodo(contenuto_input, titolo_sorgente="Dati utente", is
             except Exception as e:
                 risultato_finale = f"Errore: {e}"
         else:
-            # Sfruttiamo i 4 nodi in parallelo con ThreadPoolExecutor per la massima velocità
             with ThreadPoolExecutor(max_workers=4) as executor:
                 futures = [
                     executor.submit(worker_nodo, p1),
@@ -240,26 +229,27 @@ def esegui_analisi_multi_nodo(contenuto_input, titolo_sorgente="Dati utente", is
             
             risultato_finale = "\n\n".join([r for r in risultati_nodi if r])
             if not risultato_finale.strip():
-                # Fallback sul nodo singolo se i thread incontrano problemi
                 fallback_res = model.generate_content(f"{istruzione_lingua} Analizza {contenuto_input} usando la valuta {valuta_selezionata} con sezioni Giudizio, Analisi, Budget, Consiglio.")
                 risultato_finale = fallback_res.text if fallback_res else "Nessun risultato."
 
         st.session_state.analisi_fatta = True
         st.session_state.testo_risultato = risultato_finale
         
-        # Aggiorna statistiche e storico
         stats = carica_json(FILE_STATISTICHE, {"visite": 142, "utilizzi": 28})
         stats["utilizzi"] += 1
         salva_json(FILE_STATISTICHE, stats)
         
+        archivio_totale = carica_json(FILE_STORICO_UTENTE, {})
+        utente_corrente = st.session_state.utente_email
+        if utente_corrente not in archivio_totale:
+            archivio_totale[utente_corrente] = []
+            
         nuovo_item = {"titolo": titolo_sorgente, "risultato": risultato_finale}
-        storico_attuale = carica_json(FILE_STORICO_UTENTE, [])
-        storico_attuale.insert(0, nuovo_item)
-        salva_json(FILE_STORICO_UTENTE, storico_attuale)
+        archivio_totale[utente_corrente].insert(0, nuovo_item)
+        salva_json(FILE_STORICO_UTENTE, archivio_totale)
         
-        st.success("Elaborazione completata tramite i 4 nodi!")
+        st.success("Elaborazione completata e salvata nella tua cronologia privata!")
 
-# Funzione grafico ultra-compatto
 def mostra_grafico_compatto(id_grafico="default"):
     simbolo_val = valuta_selezionata.split("(")[-1].replace(")", "").strip()
     dati_grafico = pd.DataFrame({
@@ -290,7 +280,6 @@ def renderizza_risultati_standard(id_tab):
         st.markdown("---")
         st.markdown(st.session_state.testo_risultato)
         
-        # --- SEZIONE VALUTA QUESTA ANALISI ---
         st.markdown("---")
         st.markdown('<div class="box-valutazione">', unsafe_allow_html=True)
         st.subheader("⭐ Valuta questa analisi")
@@ -302,7 +291,6 @@ def renderizza_risultati_standard(id_tab):
         if st.button("Invia Valutazione Analisi", key=f"btn_voto_{id_tab}"):
             st.success(f"Grazie per il tuo feedback ({voto_utente_analisi})!")
         st.markdown('</div>', unsafe_allow_html=True)
-        # ------------------------------------
         
         st.markdown("---")
         st.subheader("❓ Dubbi o domande")
@@ -375,46 +363,89 @@ with tab2:
     renderizza_risultati_standard("tab2")
 
 with tab3:
-    st.subheader("🎤 Voce & SMS / Notifiche Bancarie")
-    sms_voce_input = st.text_area("Testo notifica bancaria o trascrizione:", placeholder="Es. 'Pagamento POS -45€'...", key="sms_input")
+    st.subheader("🕒 Cronologia Analisi (Privata)")
+    st.info(f"🔒 Questa è la cronologia completa delle analisi associate unicamente all'account: **{st.session_state.utente_email}**")
     
-    if st.button("Analizza Notifica", key="btn_tab3"):
-        if not sms_voce_input.strip():
-            st.warning("Inserisci il testo.")
-        else:
-            esegui_analisi_multi_nodo(sms_voce_input, "SMS / Notifica Bancaria")
-
-    renderizza_risultati_standard("tab3")
+    archivio_totale = carica_json(FILE_STORICO_UTENTE, {})
+    cronologia_utente = archivio_totale.get(st.session_state.utente_email, [])
+    
+    if not cronologia_utente:
+        st.info("Nessuna analisi presente nella tua cronologia privata.")
+    else:
+        if st.button("🗑️ Svuota la mia Cronologia", key="btn_pulisci_cronologia_privata"):
+            archivio_totale[st.session_state.utente_email] = []
+            salva_json(FILE_STORICO_UTENTE, archivio_totale)
+            st.rerun()
+            
+        for idx, item in enumerate(cronologia_utente):
+            with st.expander(f"Analisi #{len(cronologia_utente) - idx} - {item['titolo']}"):
+                st.markdown(item['risultato'])
+                st.download_button("📥 Scarica Report Analisi", data=item['risultato'], file_name=f"cronologia_report_{idx}.txt", key=f"dl_cron_{idx}")
 
 with tab4:
-    st.subheader("🎯 Obiettivi di Risparmio")
+    st.subheader("🎯 Obiettivi di Risparmio & Import/Export")
+    
+    archivio_obiettivi = carica_json(FILE_OBIETTIVI, {})
+    obiettivi_utente = archivio_obiettivi.get(st.session_state.utente_email, [])
+    
     obiettivo_input = st.text_input("Descrivi il tuo obiettivo:", placeholder="Es. Vorrei risparmiare 5000 euro.", key="obj_input")
     
-    if st.button("Analizza Obiettivo", key="btn_tab4"):
-        if not obiettivo_input.strip():
-            st.warning("Inserisci l'obiettivo.")
-        else:
-            esegui_analisi_multi_nodo(obiettivo_input, "Obiettivo di Risparmio")
+    col_ob1, col_ob2 = st.columns(2)
+    with col_ob1:
+        if st.button("Analizza Obiettivo", key="btn_tab4"):
+            if not obiettivo_input.strip():
+                st.warning("Inserisci l'obiettivo.")
+            else:
+                obiettivi_utente.insert(0, obiettivo_input)
+                archivio_obiettivi[st.session_state.utente_email] = obiettivi_utente
+                salva_json(FILE_OBIETTIVI, archivio_obiettivi)
+                esegui_analisi_multi_nodo(obiettivo_input, "Obiettivo di Risparmio")
+    
+    with col_ob2:
+        if obiettivi_utente:
+            json_obiettivi = json.dumps(obiettivi_utente, ensure_ascii=False, indent=4)
+            st.download_button("📤 Esporta Obiettivi (JSON)", data=json_obiettivi, file_name="miei_obiettivi.json", mime="application/json")
+
+    file_importato = st.file_uploader("📥 Importa Obiettivi da file JSON", type=["json"], key="import_obiettivi_file")
+    if file_importato is not None:
+        try:
+            dati_importati = json.load(file_importato)
+            if isinstance(dati_importati, list):
+                archivio_obiettivi[st.session_state.utente_email] = dati_importati + obiettivi_utente
+                salva_json(FILE_OBIETTIVI, archivio_obiettivi)
+                st.success("Obiettivi importati con successo!")
+                st.rerun()
+            else:
+                st.error("Il file JSON non ha il formato corretto.")
+        except Exception as e:
+            st.error(f"Errore durante l'importazione: {e}")
+
+    if obiettivi_utente:
+        st.markdown("#### I tuoi obiettivi registrati:")
+        for o in obiettivi_utente:
+            st.markdown(f"- {o}")
 
     renderizza_risultati_standard("tab4")
 
-if st.session_state.is_loggato:
-    with tab5:
-        st.subheader("📂 Storico Salvato (Persistente)")
-        st.info("Tutte le tue analisi precedenti rimangono salvate anche dopo la chiusura dell'app.")
-        storico_salvataggi_persistente = carica_json(FILE_STORICO_UTENTE, [])
-        if not storico_salvataggi_persistente:
-            st.info("Nessun report salvato nello storico.")
-        else:
-            if st.button("🗑️ Svuota Storico Salvato", key="btn_pulisci_storico"):
-                salva_json(FILE_STORICO_UTENTE, [])
-                st.rerun()
-                
-            for idx, item in enumerate(storico_salvataggi_persistente):
-                with st.expander(f"Analisi #{len(storico_salvataggi_persistente) - idx} - {item['titolo']}"):
-                    st.markdown(item['risultato'])
+with tab5:
+    st.subheader("📂 Storico Salvato (Globale Account)")
+    st.info(f"Visualizzazione storico per l'utente loggato: **{st.session_state.utente_email}**")
+    archivio_totale = carica_json(FILE_STORICO_UTENTE, {})
+    storico_privato = archivio_totale.get(st.session_state.utente_email, [])
+    
+    if not storico_privato:
+        st.info("Nessun report salvato per questo account.")
+    else:
+        if st.button("🗑️ Svuota Storico", key="btn_pulisci_storico"):
+            archivio_totale[st.session_state.utente_email] = []
+            salva_json(FILE_STORICO_UTENTE, archivio_totale)
+            st.rerun()
+            
+        for idx, item in enumerate(storico_privato):
+            with st.expander(f"Analisi #{len(storico_privato) - idx} - {item['titolo']}"):
+                st.markdown(item['risultato'])
 
-with (tab6 if st.session_state.is_loggato else tab5):
+with tab6:
     st.subheader("📊 Statistiche e Community")
     stats_file = carica_json(FILE_STATISTICHE, {"visite": 142, "utilizzi": 28})
     col_stat1, col_stat2 = st.columns(2)
